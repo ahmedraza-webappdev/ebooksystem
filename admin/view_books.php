@@ -1,76 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Books | Admin</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="admin_theme.css">
-    <style>
-        .book-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:18px;}
-        .book-tile{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden;transition:all 0.3s;}
-        .book-tile:hover{transform:translateY(-6px);border-color:rgba(201,168,76,0.25);box-shadow:0 20px 40px rgba(0,0,0,0.4);}
-        .book-tile-img{aspect-ratio:3/4;overflow:hidden;position:relative;}
-        .book-tile-img img{width:100%;height:100%;object-fit:cover;transition:transform 0.4s;filter:brightness(0.88);}
-        .book-tile:hover .book-tile-img img{transform:scale(1.05);filter:brightness(1);}
-        .book-tile-body{padding:13px;}
-        .book-tile-title{font-family:'Cormorant Garamond',serif;font-size:0.98rem;font-weight:600;color:#fff;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-        .book-tile-author{font-size:0.7rem;color:var(--muted);margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-        .book-tile-footer{display:flex;align-items:center;justify-content:space-between;padding-top:9px;border-top:1px solid var(--border);}
-    </style>
-</head>
-<body>
+<?php
+session_start();
+if(!isset($_SESSION['admin'])){ header("Location: admin_login.php"); exit(); }
+include("../config/db.php");
+$page_title = "View Books";
+$page_subtitle = "Browse your entire book collection";
+include("admin_header.php");
+$result = mysqli_query($conn,"SELECT * FROM books ORDER BY id DESC");
+$i = 0;
+?>
 
-<?php include("admin_sidebar.php"); ?>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <p style="color:#4a5568;font-size:0.82rem;"><?php echo mysqli_num_rows($result); ?> books in collection</p>
+    <a href="upload_book.php" class="btn-primary"><i class="fa-solid fa-plus"></i> Add New Book</a>
+</div>
 
-<main class="admin-main">
-    <div class="page-header">
-        <div>
-            <div class="page-eyebrow">Collection</div>
-            <h1 class="page-title">Book Gallery</h1>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+<?php if(mysqli_num_rows($result)>0): ?>
+<?php while($row=mysqli_fetch_assoc($result)): ?>
+    <div style="background:#141920;border:1px solid #1e2530;border-radius:10px;overflow:hidden;transition:all 0.25s;" onmouseover="this.style.borderColor='rgba(201,168,76,0.25)';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='#1e2530';this.style.transform='translateY(0)'">
+        <div style="height:200px;overflow:hidden;position:relative;background:#0d0d0d;display:flex;align-items:center;justify-content:center;">
+            <img src="../uploads/covers/<?php echo $row['book_image']; ?>" alt="cover" style="max-width:100%;max-height:100%;width:auto;height:100%;object-fit:contain;object-position:center;transition:transform 0.4s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+            <span style="position:absolute;top:10px;left:10px;background:rgba(13,13,13,0.85);color:#c9a84c;font-size:0.6rem;font-weight:700;padding:3px 9px;border-radius:4px;text-transform:uppercase;letter-spacing:0.06em;border:1px solid rgba(201,168,76,0.2);">
+                <?php echo htmlspecialchars($row['category']); ?>
+            </span>
         </div>
-        <div style="display:flex;gap:10px;">
-            <a href="index.php" class="btn btn-ghost btn-sm"><i class="fa-solid fa-gauge-high"></i> Admin Panel</a>
-            <a href="upload_book.php" class="btn btn-gold"><i class="fa-solid fa-plus"></i> Add New Book</a>
-        </div>
-    </div>
-
-    <?php
-    include("../config/db.php");
-    $result = mysqli_query($conn, "SELECT * FROM books ORDER BY id DESC");
-    if(mysqli_num_rows($result) > 0): ?>
-    <div class="book-grid">
-        <?php while($row = mysqli_fetch_assoc($result)): ?>
-        <div class="book-tile">
-            <div class="book-tile-img">
-                <?php if($row['is_free'] == 1): ?>
-                    <span class="badge badge-green" style="position:absolute;top:9px;right:9px;z-index:2;">Free</span>
+        <div style="padding:14px;">
+            <div style="font-weight:700;color:#e2e8f0;font-size:0.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:3px;"><?php echo htmlspecialchars($row['title']); ?></div>
+            <div style="font-size:0.72rem;color:#4a5568;margin-bottom:12px;"><i class="fa-solid fa-user-pen" style="margin-right:4px;font-size:0.65rem;"></i><?php echo htmlspecialchars($row['author']); ?></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #1e2530;padding-top:11px;">
+                <?php if($row['is_free']==1): ?>
+                    <span class="badge badge-free"><i class="fa-solid fa-unlock" style="margin-right:3px;font-size:0.6rem;"></i>Free</span>
+                <?php else: ?>
+                    <span style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-weight:700;font-size:1rem;">Rs. <?php echo number_format($row['price'],0); ?></span>
                 <?php endif; ?>
-                <img src="../uploads/covers/<?php echo $row['book_image']; ?>" alt="<?php echo $row['title']; ?>">
-            </div>
-            <div class="book-tile-body">
-                <div class="book-tile-title"><?php echo $row['title']; ?></div>
-                <div class="book-tile-author"><i class="fa-solid fa-user-pen" style="margin-right:3px;"></i><?php echo $row['author']; ?></div>
-                <div class="book-tile-footer">
-                    <span style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:0.98rem;color:<?php echo ($row['is_free']==1)?'#6ee7a0':'var(--gold-light)'; ?>">
-                        <?php echo ($row['is_free']==1) ? 'Free' : '₹'.number_format($row['price'],2); ?>
-                    </span>
-                    <div style="display:flex;gap:5px;">
-                        <a href="edit_book.php?id=<?php echo $row['id']; ?>" class="btn btn-ghost btn-icon btn-sm" title="Edit"><i class="fa-solid fa-pen-to-square" style="font-size:0.6rem;"></i></a>
-                        <a href="delete_book.php?id=<?php echo $row['id']; ?>" onclick="return confirm('Pakka delete karna hai?')" class="btn btn-danger btn-icon btn-sm" title="Delete"><i class="fa-solid fa-trash-can" style="font-size:0.6rem;"></i></a>
-                    </div>
+                <div style="display:flex;gap:6px;">
+                    <a href="edit_book.php?id=<?php echo $row['id']; ?>" class="action-btn btn-edit"><i class="fa-solid fa-pen"></i></a>
+                    <a href="delete_book.php?id=<?php echo $row['id']; ?>" class="action-btn btn-delete" onclick="return confirm('Delete this book?')"><i class="fa-solid fa-trash"></i></a>
                 </div>
             </div>
         </div>
-        <?php endwhile; ?>
     </div>
-    <?php else: ?>
-    <div style="text-align:center;padding:80px 20px;color:var(--muted);">
-        <i class="fa-solid fa-box-open" style="font-size:2.8rem;display:block;margin-bottom:14px;opacity:0.15;"></i>
-        <p>No books available in the gallery.</p>
+<?php $i++; endwhile; ?>
+<?php else: ?>
+    <div style="grid-column:span 4;text-align:center;padding:80px;color:#4a5568;">
+        <i class="fa-solid fa-box-open" style="font-size:2.5rem;display:block;margin-bottom:14px;opacity:0.3;color:var(--gold);"></i>
+        <p>No books available. <a href="upload_book.php" style="color:var(--gold);font-weight:700;">Add one now →</a></p>
     </div>
-    <?php endif; ?>
-</main>
+<?php endif; ?>
+</div>
 
-</body>
-</html>
+<?php include("admin_footer.php"); ?>

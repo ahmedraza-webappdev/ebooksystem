@@ -1,23 +1,38 @@
 <?php 
+ob_start(); // 1. Start buffering to prevent header errors
 if (session_status() === PHP_SESSION_NONE) { session_start(); } 
+
 include("../config/db.php"); 
-include("navbar.php"); 
-if(!isset($_SESSION['user_id'])){ header("Location: login.php"); exit(); }
+
+// 2. Perform ALL redirect checks BEFORE including the navbar
+if(!isset($_SESSION['user_id'])){ 
+    header("Location: login.php"); 
+    exit(); 
+}
+
 $user_id = $_SESSION['user_id'];
 $book_id = isset($_GET['id']) ? mysqli_real_escape_string($conn, $_GET['id']) : 0;
+
 $query = "SELECT books.* FROM books 
           LEFT JOIN orders ON books.id = orders.book_id AND orders.user_id = '$user_id'
           WHERE books.id = '$book_id' 
           AND (books.price <= 0 OR orders.id IS NOT NULL)";
+
 $result = mysqli_query($conn, $query);
+
 if(mysqli_num_rows($result) > 0){
     $book = mysqli_fetch_assoc($result);
     $pdf_name = $book['pdf_file']; 
     $pdf_file = "../uploads/pdf/" . $pdf_name; 
 } else {
+    // Note: This uses JS alert which is fine after headers, 
+    // but the header() check above MUST come before the include.
     echo "<script>alert('Access Denied!'); window.location.href='index.php';</script>";
     exit();
 }
+
+// 3. NOW it is safe to include the navbar
+include("navbar.php"); 
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -26,6 +41,7 @@ if(mysqli_num_rows($result) > 0){
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reading | <?php echo htmlspecialchars($book['title']); ?></title>
 <style>
+/* ... (Your styles remain exactly the same) ... */
 body{background:#0d0d0d;margin:0;padding:0;overflow:hidden;}
 .reader-bar{background:#141920;border-bottom:1px solid rgba(255,255,255,0.07);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;}
 .reader-left{display:flex;align-items:center;gap:12px;}
