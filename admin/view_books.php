@@ -9,42 +9,69 @@ $result = mysqli_query($conn,"SELECT * FROM books ORDER BY id DESC");
 $i = 0;
 ?>
 
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-    <p style="color:#4a5568;font-size:0.82rem;"><?php echo mysqli_num_rows($result); ?> books in collection</p>
-    <a href="upload_book.php" class="btn-primary"><i class="fa-solid fa-plus"></i> Add New Book</a>
+<!-- Top Bar Fix -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px; padding: 0 4px;">
+    <p style="color:#94a3b8; font-size:0.85rem; font-weight:500;">
+        <i class="fa-solid fa-layer-group" style="color:var(--gold); margin-right:8px;"></i>
+        <span style="color:#e2e8f0; font-weight:700;"><?php echo mysqli_num_rows($result); ?></span> books in collection
+    </p>
+    <a href="upload_book.php" class="btn-primary" style="padding: 10px 20px;"><i class="fa-solid fa-plus"></i> Add New Book</a>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
 <?php if(mysqli_num_rows($result)>0): ?>
 <?php while($row=mysqli_fetch_assoc($result)): ?>
-    <div style="background:#141920;border:1px solid #1e2530;border-radius:10px;overflow:hidden;transition:all 0.25s;" onmouseover="this.style.borderColor='rgba(201,168,76,0.25)';this.style.transform='translateY(-4px)'" onmouseout="this.style.borderColor='#1e2530';this.style.transform='translateY(0)'">
-        <div style="height:200px;overflow:hidden;position:relative;background:#0d0d0d;display:flex;align-items:center;justify-content:center;">
-            <img src="../uploads/covers/<?php echo $row['book_image']; ?>" alt="cover" style="max-width:100%;max-height:100%;width:auto;height:100%;object-fit:contain;object-position:center;transition:transform 0.4s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-            <span style="position:absolute;top:10px;left:10px;background:rgba(13,13,13,0.85);color:#c9a84c;font-size:0.6rem;font-weight:700;padding:3px 9px;border-radius:4px;text-transform:uppercase;letter-spacing:0.06em;border:1px solid rgba(201,168,76,0.2);">
+    <div style="background:#141920; border:1px solid #1e2530; border-radius:12px; overflow:hidden; transition:all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);" 
+         onmouseover="this.style.borderColor='rgba(201,168,76,0.4)'; this.style.transform='translateY(-6px)'; this.style.boxShadow='0 10px 25px rgba(0,0,0,0.4)';" 
+         onmouseout="this.style.borderColor='#1e2530'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';"
+    >
+        <!-- Book Cover Area -->
+        <div style="height:220px; overflow:hidden; position:relative; background:#0a0a0a; display:flex; align-items:center; justify-content:center; border-bottom: 1px solid #1e2530;">
+            <img src="../uploads/covers/<?php echo $row['book_image']; ?>" alt="cover" style="max-width:100%; max-height:100%; width:auto; height:90%; object-fit:contain; transition:transform 0.5s ease;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+            
+            <!-- Category Badge -->
+            <span style="position:absolute; top:12px; left:12px; background:rgba(201,168,76,0.15); color:#c9a84c; font-size:0.62rem; font-weight:800; padding:4px 10px; border-radius:6px; text-transform:uppercase; letter-spacing:0.06em; border:1px solid rgba(201,168,76,0.3); backdrop-filter: blur(4px);">
                 <?php echo htmlspecialchars($row['category']); ?>
             </span>
         </div>
-        <div style="padding:14px;">
-            <div style="font-weight:700;color:#e2e8f0;font-size:0.84rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:3px;"><?php echo htmlspecialchars($row['title']); ?></div>
-            <div style="font-size:0.72rem;color:#4a5568;margin-bottom:12px;"><i class="fa-solid fa-user-pen" style="margin-right:4px;font-size:0.65rem;"></i><?php echo htmlspecialchars($row['author']); ?></div>
-            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #1e2530;padding-top:11px;">
+
+        <!-- Book Details Area -->
+        <div style="padding:16px;">
+            <div style="font-weight:700; color:#ffffff; font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:4px;" title="<?php echo htmlspecialchars($row['title']); ?>">
+                <?php echo htmlspecialchars($row['title']); ?>
+            </div>
+            
+            <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:16px; display:flex; align-items:center;">
+                <i class="fa-solid fa-user-pen" style="margin-right:6px; font-size:0.7rem; color:var(--gold);"></i>
+                <?php echo htmlspecialchars($row['author']); ?>
+            </div>
+
+            <!-- Pricing & Actions -->
+            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.05); padding-top:14px;">
                 <?php if($row['is_free']==1): ?>
-                    <span class="badge badge-free"><i class="fa-solid fa-unlock" style="margin-right:3px;font-size:0.6rem;"></i>Free</span>
+                    <span style="background:rgba(34,197,94,0.1); color:#4ade80; border:1px solid rgba(34,197,94,0.2); padding:3px 10px; border-radius:6px; font-size:0.65rem; font-weight:800; text-transform:uppercase;">
+                        <i class="fa-solid fa-unlock-keyhole" style="margin-right:4px;"></i>Free
+                    </span>
                 <?php else: ?>
-                    <span style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-weight:700;font-size:1rem;">Rs. <?php echo number_format($row['price'],0); ?></span>
+                    <span style="font-family:'DM Sans', sans-serif; color:var(--gold); font-weight:800; font-size:0.95rem;">
+                        <span style="font-size:0.75rem; margin-right:2px; opacity:0.8;">Rs.</span><?php echo number_format($row['price'],0); ?>
+                    </span>
                 <?php endif; ?>
-                <div style="display:flex;gap:6px;">
-                    <a href="edit_book.php?id=<?php echo $row['id']; ?>" class="action-btn btn-edit"><i class="fa-solid fa-pen"></i></a>
-                    <a href="delete_book.php?id=<?php echo $row['id']; ?>" class="action-btn btn-delete" onclick="return confirm('Delete this book?')"><i class="fa-solid fa-trash"></i></a>
+
+                <div style="display:flex; gap:8px;">
+                    <a href="edit_book.php?id=<?php echo $row['id']; ?>" style="color:var(--gold); background:rgba(201,168,76,0.1); border:1px solid rgba(201,168,76,0.2); width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:0.2s;" onmouseover="this.style.background='var(--gold)'; this.style.color='#000';"><i class="fa-solid fa-pen" style="font-size:0.75rem;"></i></a>
+                    <a href="delete_book.php?id=<?php echo $row['id']; ?>" style="color:#ef4444; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:0.2s;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onclick="return confirm('Delete this book?')"><i class="fa-solid fa-trash" style="font-size:0.75rem;"></i></a>
                 </div>
             </div>
         </div>
     </div>
 <?php $i++; endwhile; ?>
 <?php else: ?>
-    <div style="grid-column:span 4;text-align:center;padding:80px;color:#4a5568;">
-        <i class="fa-solid fa-box-open" style="font-size:2.5rem;display:block;margin-bottom:14px;opacity:0.3;color:var(--gold);"></i>
-        <p>No books available. <a href="upload_book.php" style="color:var(--gold);font-weight:700;">Add one now →</a></p>
+    <!-- Empty State -->
+    <div style="grid-column:span 4; text-align:center; padding:100px 20px; background:#141920; border-radius:15px; border:1px dashed #1e2530;">
+        <i class="fa-solid fa-book-open" style="font-size:3rem; display:block; margin-bottom:16px; opacity:0.2; color:var(--gold);"></i>
+        <p style="color:#94a3b8; font-size:0.95rem;">Your library is currently empty.</p>
+        <a href="upload_book.php" style="color:var(--gold); font-weight:700; text-decoration:none; margin-top:10px; display:inline-block; border-bottom:1px solid var(--gold); padding-bottom:2px;">Add your first book →</a>
     </div>
 <?php endif; ?>
 </div>

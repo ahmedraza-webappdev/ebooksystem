@@ -5,7 +5,10 @@
     <title>Admin Login | E-Library</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 for beautiful messages -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        /* Aapki purani CSS yahan rahegi (Maine wahi rakhi hai) */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Sans', sans-serif; }
         body { min-height: 100vh; background: #0d0d0d; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
         body::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(201,168,76,0.07) 0%, transparent 65%); }
@@ -34,26 +37,44 @@
             <h1>E-Library</h1>
             <p>Admin Panel</p>
         </div>
+
         <?php if(isset($_GET['error'])): ?>
-        <div class="err"><i class="fa-solid fa-circle-exclamation"></i> Invalid username or password</div>
+            <div class="err"><i class="fa-solid fa-circle-exclamation"></i> Invalid username or password</div>
         <?php endif; ?>
-        <form method="POST" action="admin_login_process.php">
+
+        <!-- Added autocomplete="off" here -->
+        <form method="POST" action="admin_login_process.php" autocomplete="off">
             <div class="field">
                 <label>Username</label>
                 <div class="input-wrap">
                     <i class="fa-solid fa-user"></i>
-                    <input type="text" name="username" placeholder="Enter username" required>
+                    <!-- Use autocomplete="new-password" to trick modern browsers -->
+                    <input type="text" name="username" placeholder="Enter username" required autocomplete="new-password">
                 </div>
             </div>
             <div class="field">
                 <label>Password</label>
                 <div class="input-wrap">
                     <i class="fa-solid fa-lock"></i>
-                    <input type="password" name="password" placeholder="Enter password" required>
+                    <input type="password" name="password" placeholder="Enter password" required autocomplete="new-password">
                 </div>
             </div>
             <button type="submit" class="btn"><i class="fa-solid fa-right-to-bracket" style="margin-right:7px;"></i>Sign In</button>
         </form>
     </div>
+
+    <?php if(isset($_GET['logout'])): ?>
+    <script>
+        Swal.fire({
+            title: 'Logged Out!',
+            text: 'You are Successfully Logout.',
+            icon: 'success',
+            background: '#141920',
+            color: '#e2e8f0',
+            confirmButtonColor: '#c9a84c',
+            timer: 3000
+        });
+    </script>
+    <?php endif; ?>
 </body>
 </html>

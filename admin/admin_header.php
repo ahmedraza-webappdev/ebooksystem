@@ -1,5 +1,5 @@
 <?php
-// admin_header.php - E-Library Dark Gold Theme
+// admin_header.php - E-Library Dark Gold Theme (Fixed Scroll System)
 if(!isset($page_title)) $page_title = "Dashboard";
 if(!isset($page_subtitle)) $page_subtitle = "E-Book Admin Panel";
 ?>
@@ -8,11 +8,15 @@ if(!isset($page_subtitle)) $page_subtitle = "E-Book Admin Panel";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin | <?php echo $page_title; ?></title>
+<title>Book-Astra | Admin - <?php echo $page_title; ?></title>
+
+<!-- Font Awesome aur Favicon ke liye (Optional: Agar aapke paas favicon icon hai) -->
+<link rel="icon" type="image/x-icon" href="file.svg">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        
         :root {
             --gold: #c9a84c;
             --gold-light: #dfc070;
@@ -24,22 +28,32 @@ if(!isset($page_subtitle)) $page_subtitle = "E-Book Admin Panel";
             --sage: #4a7a59;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: #0a0c10; color: #e2e8f0; min-height: 100vh; }
+        
+        /* FIX 1: Body overflow setup */
+        body { 
+            font-family: 'DM Sans', sans-serif; 
+            background: #0a0c10; 
+            color: #e2e8f0; 
+            min-height: 100vh;
+            overflow-x: hidden; /* Horizontal scroll rokhne ke liye */
+        }
 
         .sidebar {
             width: 250px;
             background: #0d0d0d;
             border-right: 1px solid var(--border);
-            min-height: 100vh;
+            height: 100vh; /* Fixed height */
             position: fixed;
             left: 0; top: 0;
             display: flex;
             flex-direction: column;
             z-index: 100;
         }
+        
         .sidebar-logo {
             padding: 26px 22px 20px;
             border-bottom: 1px solid var(--border);
+            flex-shrink: 0; /* Logo ko shrink hone se rokna */
         }
         .sidebar-logo h1 {
             font-family: 'Cormorant Garamond', serif;
@@ -62,11 +76,18 @@ if(!isset($page_subtitle)) $page_subtitle = "E-Book Admin Panel";
         .nav-icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 6px; background: rgba(255,255,255,0.03); font-size: 0.76rem; flex-shrink: 0; }
         .nav-item.active .nav-icon { background: rgba(201,168,76,0.12); }
 
-        .sidebar-footer { margin-top: auto; padding: 14px 10px; border-top: 1px solid var(--border); }
+        .sidebar-footer { margin-top: auto; padding: 14px 10px; border-top: 1px solid var(--border); flex-shrink: 0; }
         .logout-btn { display: flex; align-items: center; gap: 10px; padding: 9px 12px; color: #ef4444; font-size: 0.82rem; font-weight: 600; cursor: pointer; border-radius: 7px; transition: all 0.2s; text-decoration: none; }
         .logout-btn:hover { background: rgba(239,68,68,0.08); }
 
-        .main-content { margin-left: 250px; padding: 26px; min-height: 100vh; }
+        /* FIX 2: Main content width and scroll */
+        .main-content { 
+            margin-left: 250px; 
+            padding: 26px; 
+            min-height: 100vh;
+            width: calc(100% - 250px); /* Poori width cover karne ke liye */
+            display: flow-root; /* Layout collapse fix */
+        }
 
         .topbar {
             background: var(--dark2);
@@ -93,50 +114,45 @@ if(!isset($page_subtitle)) $page_subtitle = "E-Book Admin Panel";
 
         .badge { padding: 3px 10px; border-radius: 20px; font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; }
         .badge-free { background: rgba(74,122,89,0.12); color: #4a7a59; border: 1px solid rgba(74,122,89,0.22); }
-        .badge-paid { background: rgba(201,168,76,0.1); color: var(--gold); border: 1px solid rgba(201,168,76,0.2); }
-        .badge-category { background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.18); }
-        .badge-winner { background: rgba(201,168,76,0.12); color: var(--gold); border: 1px solid rgba(201,168,76,0.25); }
-        .badge-active { background: rgba(74,122,89,0.1); color: #4a7a59; border: 1px solid rgba(74,122,89,0.2); }
-        .badge-pending { background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
-
         .btn-primary { background: var(--gold); color: #0d0d0d; padding: 9px 18px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: all 0.2s; text-decoration: none; }
         .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); color: #0d0d0d; }
 
-        .action-btn { width: 30px; height: 30px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); text-decoration: none; }
-        .btn-edit { background: rgba(99,102,241,0.08); color: #818cf8; }
-        .btn-edit:hover { background: #6366f1; color: white; border-color: #6366f1; }
-        .btn-delete { background: rgba(239,68,68,0.08); color: #f87171; }
-        .btn-delete:hover { background: #ef4444; color: white; border-color: #ef4444; }
-
-        .form-label { font-size: 0.7rem; font-weight: 700; color: #506070; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.07em; }
-        .form-input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.84rem; background: #0d0d0d; color: #e2e8f0; transition: all 0.2s; outline: none; font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
-        .form-input:focus { border-color: rgba(201,168,76,0.45); box-shadow: 0 0 0 3px rgba(201,168,76,0.07); }
-        .form-input::placeholder { color: #2a3445; }
-
-        .alert-success { background: rgba(74,122,89,0.08); border: 1px solid rgba(74,122,89,0.22); color: #4a7a59; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 0.84rem; }
-        .alert-error { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18); color: #f87171; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 0.84rem; }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #0d0d0d; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
-
-        /* SweetAlert dark */
-        .swal2-popup { background: var(--dark2) !important; border: 1px solid var(--border) !important; color: #e2e8f0 !important; border-radius: 12px !important; }
-        .swal2-title { color: #fff !important; font-family: 'Cormorant Garamond', serif !important; }
-        .swal2-html-container { color: #94a3b8 !important; }
-        .swal2-confirm { background: var(--gold) !important; color: #0d0d0d !important; font-weight: 700 !important; }
-        .swal2-cancel { background: var(--dark3) !important; color: #94a3b8 !important; border: 1px solid var(--border) !important; }
-        .swal2-icon { border-color: var(--border) !important; }
+        /* FIX 3: Global Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0c10; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
     </style>
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="sidebar-logo">
-        <h1><i class="fa-solid fa-book-open" style="margin-right:8px;opacity:0.85;"></i>E-Library</h1>
-        <p>Admin Panel</p>
-    </div>
+<!-- Browser Tab Title Update -->
+<title>Book-Astra | Admin <?php echo $page_title; ?></title>
 
+<!-- Font Awesome aur Favicon ke liye (Optional: Agar aapke paas favicon icon hai) -->
+<link rel="icon" type="image/x-icon" href="file.svg">
+
+
+<div class="sidebar">
+    <div class="sidebar-logo" style="padding: 20px 25px;">
+        <a href="dashboard.php" style="text-decoration: none; display: block;">
+            <!-- Logo Image -->
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="file.svg" alt="Book-Astra Logo" style="width: 45px; height: auto; filter: drop-shadow(0 0 5px rgba(201,168,76,0.3));">
+                
+                <div style="display: flex; flex-direction: column;">
+                    <h1 style="font-family: 'Cormorant Garamond', serif; color: var(--gold); font-size: 1.4rem; font-weight: 700; line-height: 1; margin: 0;">
+                        Book-Astra
+                    </h1>
+                    
+                </div>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Baki navigation niche wese hi rahegi -->
+
+    <!-- Navigation container with its own scroll if items are too many -->
     <div style="overflow-y:auto; flex:1; padding-bottom:10px;">
         <div class="nav-section-title">Main</div>
         <a href="dashboard.php" class="nav-item <?php echo ($page_title=='Dashboard')?'active':''; ?>">
@@ -198,5 +214,3 @@ if(!isset($page_subtitle)) $page_subtitle = "E-Book Admin Panel";
             </div>
         </div>
     </div>
-    
-<!-- PAGE CONTENT STARTS BELOW -->

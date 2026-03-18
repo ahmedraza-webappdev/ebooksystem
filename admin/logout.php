@@ -1,6 +1,9 @@
 <?php
 session_start();
+session_unset();
 session_destroy();
-header("Location: admin_login.php");
+
+// Redirect with a logout success message
+header("Location: admin_login.php?logout=1");
 exit();
 ?>
