@@ -3,6 +3,9 @@ session_start();
 include("../config/db.php");
 
 $msg = "";
+$registered_name = "";
+$registered_email = "";
+$show_welcome = false;
 
 if(isset($_POST['register'])){
     $name     = mysqli_real_escape_string($conn, $_POST['name']);
@@ -11,27 +14,25 @@ if(isset($_POST['register'])){
     $phone    = mysqli_real_escape_string($conn, $_POST['phone']);
     $address  = isset($_POST['address']) ? mysqli_real_escape_string($conn, $_POST['address']) : '';
 
-    // Pehle check karo email already exist karta hai ya nahi
     $check = mysqli_query($conn, "SELECT id FROM users WHERE email='$email'");
     if(mysqli_num_rows($check) > 0){
         $msg = "This email is already registered. Please login.";
     } else {
-        // address aur created_at ke saath try karo
         $sql = "INSERT INTO users(name, email, password, phone, address, created_at) VALUES('$name','$email','$password','$phone','$address',NOW())";
         if(!mysqli_query($conn, $sql)){
-            // agar address/created_at column nahi hai to simple insert
             $sql = "INSERT INTO users(name, email, password, phone) VALUES('$name','$email','$password','$phone')";
             if(mysqli_query($conn, $sql)){
-                $_SESSION['success_msg'] = "Account created successfully! Please sign in.";
-                header("Location: login.php");
-                exit();
+                // ← Redirect hata diya, ab welcome screen dikhayenge
+                $show_welcome = true;
+                $registered_name  = htmlspecialchars($name);
+                $registered_email = htmlspecialchars($email);
             } else {
                 $msg = "Registration failed: " . mysqli_error($conn);
             }
         } else {
-            $_SESSION['success_msg'] = "Account created successfully! Please sign in.";
-            header("Location: login.php");
-            exit();
+            $show_welcome = true;
+            $registered_name  = htmlspecialchars($name);
+            $registered_email = htmlspecialchars($email);
         }
     }
 }
@@ -87,6 +88,8 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
 .sp:nth-child(15){width:14px;height:64px;background:#1a0a1a;animation-delay:0.75s;}
 .sp:nth-child(16){width:26px;height:42px;background:#2a1a2a;animation-delay:0.80s;}
 @keyframes spineRise{from{transform:translateY(100%);}to{transform:translateY(0);}}
+
+/* ── Right Panel ── */
 .right-panel{flex:1;background:var(--ink);display:flex;align-items:center;justify-content:center;padding:40px 52px;overflow-y:auto;position:relative;}
 .right-panel::before{content:'';position:absolute;left:0;top:15%;bottom:15%;width:1px;background:linear-gradient(to bottom,transparent,rgba(201,168,76,0.18) 25%,rgba(201,168,76,0.18) 75%,transparent);}
 .form-wrap{width:100%;max-width:370px;}
@@ -124,11 +127,32 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
 .r-foot{text-align:center;margin-top:18px;font-size:0.76rem;color:var(--muted);}
 .r-foot a{color:var(--gold);font-weight:600;text-decoration:none;margin-left:4px;}
 .r-foot a:hover{color:var(--gold-light);}
+
+/* ── Screen switching ── */
+.screen{display:none;animation:screenIn 0.5s ease both;}
+.screen.active{display:block;}
+@keyframes screenIn{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── Welcome Screen ── */
+.welcome-icon-wrap{text-align:center;margin-bottom:22px;}
+.welcome-badge{display:inline-flex;align-items:center;justify-content:center;width:70px;height:70px;border-radius:50%;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);font-size:1.8rem;}
+.welcome-name-gold{color:var(--gold);}
+.welcome-list{list-style:none;margin:20px 0 26px;}
+.welcome-list li{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:8px;background:var(--surface);border:1px solid var(--border);margin-bottom:8px;font-size:0.8rem;color:rgba(255,255,255,0.55);}
+.welcome-list li .wl-ic{width:28px;height:28px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.72rem;}
+
+/* ── Login form extras (re-uses .fg .fi .fl etc.) ── */
+.divider-line{display:flex;align-items:center;gap:10px;margin:18px 0;font-size:0.68rem;color:rgba(255,255,255,0.2);}
+.divider-line::before,.divider-line::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06);}
+.btn-outline{width:100%;background:transparent;color:rgba(255,255,255,0.55);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.82rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;letter-spacing:0.03em;}
+.btn-outline:hover{border-color:rgba(201,168,76,0.3);color:var(--gold);}
+
 @media(max-width:860px){body{flex-direction:column;overflow:auto;}.left-panel{width:100%;min-height:200px;}.panel-inner{padding:28px 24px;}.right-panel{padding:28px 24px;}.right-panel::before{display:none;}.spine-shelf{height:60px;}.watermark{font-size:18vw;}.q{display:none;}}
 </style>
 </head>
 <body>
 
+<!-- ══════════════ LEFT PANEL (unchanged) ══════════════ -->
 <div class="left-panel">
   <div class="watermark">E</div>
   <div class="q" style="top:7%;left:5%;font-size:0.82rem;--dur:20s;--delay:0s;--rot:-1.5deg;max-width:200px;">"A reader lives a thousand<br>lives before he dies."</div>
@@ -153,67 +177,153 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
   </div>
 </div>
 
+<!-- ══════════════ RIGHT PANEL ══════════════ -->
 <div class="right-panel">
   <div class="form-wrap">
+
     <div class="r-topbar">
       <a href="index.php" class="r-brand">📚 <span>E-Library</span></a>
       <a href="login.php" class="r-signin"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In</a>
     </div>
-    <div class="r-eyebrow">✦ Free Registration</div>
-    <h2 class="r-title">Create Account</h2>
-    <p class="r-sub">Start your digital reading journey today</p>
 
-    <?php if($msg != ""): ?>
-    <div class="err-box"><i class="fa-solid fa-circle-exclamation"></i> <?php echo $msg; ?></div>
-    <?php endif; ?>
+    <!-- ── SCREEN 1: Register Form ── -->
+    <div class="screen <?php echo (!$show_welcome) ? 'active' : ''; ?>" id="screen-register">
+      <div class="r-eyebrow">✦ Free Registration</div>
+      <h2 class="r-title">Create Account</h2>
+      <p class="r-sub">Start your digital reading journey today</p>
 
-    <form method="POST" id="regForm">
-      <div class="fg">
-        <i class="fic fa-regular fa-user"></i>
-        <input type="text" name="name" id="fn" class="fi" placeholder="Full Name" required autocomplete="name">
-        <label class="fl" for="fn">Full Name</label>
-        <i class="fa-solid fa-check check-mark"></i>
-      </div>
-      <div class="fg">
-        <i class="fic fa-regular fa-envelope"></i>
-        <input type="email" name="email" id="fe" class="fi" placeholder="Email Address" required autocomplete="email">
-        <label class="fl" for="fe">Email Address</label>
-        <i class="fa-solid fa-check check-mark"></i>
-      </div>
-      <div class="fg">
-        <i class="fic fa-solid fa-mobile-screen"></i>
-        <input type="text" name="phone" id="fph" class="fi" placeholder="Phone Number" required autocomplete="tel">
-        <label class="fl" for="fph">Phone Number</label>
-        <i class="fa-solid fa-check check-mark"></i>
-      </div>
-      <div class="fg">
-        <i class="fic fa-solid fa-location-dot"></i>
-        <input type="text" name="address" id="fadd" class="fi" placeholder="Your Address" autocomplete="street-address">
-        <label class="fl" for="fadd">Address (Optional)</label>
-        <i class="fa-solid fa-check check-mark"></i>
-      </div>
-      <div class="fg">
-        <i class="fic fa-solid fa-lock"></i>
-        <input type="password" name="password" id="fpass" class="fi" placeholder="Password" required autocomplete="new-password" oninput="checkStr(this.value)">
-        <label class="fl" for="fpass">Password</label>
-        <button type="button" class="pwd-btn" onclick="toggleP()"><i class="fa-regular fa-eye" id="eyeIco"></i></button>
-      </div>
-      <div class="str-wrap" id="strWrap">
-        <div class="str-bars">
-          <div class="sb" id="sb1"></div><div class="sb" id="sb2"></div>
-          <div class="sb" id="sb3"></div><div class="sb" id="sb4"></div>
+      <?php if($msg != ""): ?>
+      <div class="err-box"><i class="fa-solid fa-circle-exclamation"></i> <?php echo $msg; ?></div>
+      <?php endif; ?>
+
+      <form method="POST" id="regForm">
+        <div class="fg">
+          <i class="fic fa-regular fa-user"></i>
+          <input type="text" name="name" id="fn" class="fi" placeholder="Full Name" required autocomplete="name">
+          <label class="fl" for="fn">Full Name</label>
+          <i class="fa-solid fa-check check-mark"></i>
         </div>
-        <div class="str-lbl" id="strLbl"></div>
+        <div class="fg">
+          <i class="fic fa-regular fa-envelope"></i>
+          <input type="email" name="email" id="fe" class="fi" placeholder="Email Address" required autocomplete="email">
+          <label class="fl" for="fe">Email Address</label>
+          <i class="fa-solid fa-check check-mark"></i>
+        </div>
+        <div class="fg">
+          <i class="fic fa-solid fa-mobile-screen"></i>
+          <input type="text" name="phone" id="fph" class="fi" placeholder="Phone Number" required autocomplete="tel">
+          <label class="fl" for="fph">Phone Number</label>
+          <i class="fa-solid fa-check check-mark"></i>
+        </div>
+        <div class="fg">
+          <i class="fic fa-solid fa-location-dot"></i>
+          <input type="text" name="address" id="fadd" class="fi" placeholder="Your Address" autocomplete="street-address">
+          <label class="fl" for="fadd">Address (Optional)</label>
+          <i class="fa-solid fa-check check-mark"></i>
+        </div>
+        <div class="fg">
+          <i class="fic fa-solid fa-lock"></i>
+          <input type="password" name="password" id="fpass" class="fi" placeholder="Password" required autocomplete="new-password" oninput="checkStr(this.value)">
+          <label class="fl" for="fpass">Password</label>
+          <button type="button" class="pwd-btn" onclick="toggleP()"><i class="fa-regular fa-eye" id="eyeIco"></i></button>
+        </div>
+        <div class="str-wrap" id="strWrap">
+          <div class="str-bars">
+            <div class="sb" id="sb1"></div><div class="sb" id="sb2"></div>
+            <div class="sb" id="sb3"></div><div class="sb" id="sb4"></div>
+          </div>
+          <div class="str-lbl" id="strLbl"></div>
+        </div>
+        <button type="submit" name="register" class="btn-go">Create My Account →</button>
+      </form>
+      <div class="r-foot">Already have an account?<a href="login.php">Sign In</a></div>
+    </div><!-- /screen-register -->
+
+    <!-- ── SCREEN 2: Welcome ── -->
+    <div class="screen <?php echo $show_welcome ? 'active' : ''; ?>" id="screen-welcome">
+      <div class="welcome-icon-wrap">
+        <div class="welcome-badge">📚</div>
       </div>
-      <button type="submit" name="register" class="btn-go">Create My Account →</button>
-    </form>
-    <div class="r-foot">Already have an account?<a href="login.php">Sign In</a></div>
+      <div class="r-eyebrow">✦ Registration Successful</div>
+      <h2 class="r-title">Welcome, <span class="welcome-name-gold"><?php echo $registered_name; ?>!</span></h2>
+      <p class="r-sub">Your E-Library account is ready. Here's what awaits you:</p>
+
+      <ul class="welcome-list">
+        <li>
+          <div class="wl-ic" style="background:rgba(201,168,76,0.1);color:#c9a84c;"><i class="fa-solid fa-check"></i></div>
+          Account verified &amp; activated
+        </li>
+        <li>
+          <div class="wl-ic" style="background:rgba(74,124,89,0.12);color:#6abd7c;"><i class="fa-solid fa-book-open"></i></div>
+          Access to hundreds of free books
+        </li>
+        <li>
+          <div class="wl-ic" style="background:rgba(99,102,241,0.12);color:#818cf8;"><i class="fa-solid fa-trophy"></i></div>
+          Essay competitions &amp; rewards
+        </li>
+        <li>
+          <div class="wl-ic" style="background:rgba(224,92,92,0.1);color:#f87171;"><i class="fa-solid fa-mobile-screen"></i></div>
+          Read on any device, anywhere
+        </li>
+      </ul>
+
+      <button class="btn-go" onclick="showLogin()">Sign In to Your Account →</button>
+      <div class="r-foot">Need help?<a href="mailto:support@elibrary.pk">Contact Support</a></div>
+    </div><!-- /screen-welcome -->
+
+    <!-- ── SCREEN 3: Login ── -->
+    <div class="screen" id="screen-login">
+      <div class="r-eyebrow">✦ Welcome Back</div>
+      <h2 class="r-title">Sign In</h2>
+      <p class="r-sub">Enter your credentials to continue reading</p>
+
+      <?php if(isset($_SESSION['success_msg'])): ?>
+      <div style="display:flex;align-items:center;gap:9px;background:rgba(74,124,89,0.07);border:1px solid rgba(74,124,89,0.2);color:#6abd7c;font-size:0.77rem;padding:10px 13px;border-radius:7px;margin-bottom:20px;">
+        <i class="fa-solid fa-circle-check"></i> <?php echo $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?>
+      </div>
+      <?php endif; ?>
+
+      <form method="POST" action="login.php">
+        <div class="fg">
+          <i class="fic fa-regular fa-envelope"></i>
+          <input type="email" name="email" id="le" class="fi" placeholder="Email Address" required autocomplete="email"
+            value="<?php echo $registered_email; ?>">
+          <label class="fl" for="le">Email Address</label>
+          <i class="fa-solid fa-check check-mark"></i>
+        </div>
+        <div class="fg">
+          <i class="fic fa-solid fa-lock"></i>
+          <input type="password" name="password" id="lpass" class="fi" placeholder="Password" required autocomplete="current-password">
+          <label class="fl" for="lpass">Password</label>
+          <button type="button" class="pwd-btn" onclick="toggleLP()"><i class="fa-regular fa-eye" id="lEyeIco"></i></button>
+        </div>
+        <button type="submit" name="login" class="btn-go">Sign In →</button>
+      </form>
+
+      <div class="divider-line">or</div>
+      <button class="btn-outline" onclick="showRegister()"><i class="fa-solid fa-user-plus" style="margin-right:7px;"></i>Create a New Account</button>
+      <div class="r-foot">Forgot your password?<a href="forgot.php">Reset it here</a></div>
+    </div><!-- /screen-login -->
+
   </div>
 </div>
 
 <script>
+/* ── Original JS (unchanged) ── */
 function toggleP(){var i=document.getElementById('fpass');var ic=document.getElementById('eyeIco');i.type=i.type==='password'?'text':'password';ic.classList.toggle('fa-eye');ic.classList.toggle('fa-eye-slash');}
 function checkStr(v){var w=document.getElementById('strWrap');var l=document.getElementById('strLbl');var bs=[document.getElementById('sb1'),document.getElementById('sb2'),document.getElementById('sb3'),document.getElementById('sb4')];bs.forEach(function(b){b.className='sb';});if(!v){w.classList.remove('show');return;}w.classList.add('show');var sc=0;if(v.length>=6)sc++;if(v.length>=10)sc++;if(/[A-Z]/.test(v)&&/[0-9]/.test(v))sc++;if(/[^A-Za-z0-9]/.test(v))sc++;var lvl=[{c:'w',t:'Weak — keep going'},{c:'f',t:'Fair — getting better'},{c:'g',t:'Good — almost there'},{c:'s',t:'Strong — great!'}];for(var i=0;i<sc;i++)bs[i].classList.add(lvl[sc-1].c);l.textContent=lvl[sc-1].t;}
+
+/* ── New: Screen switcher ── */
+function goToScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  var el = document.getElementById(id);
+  if(el){ el.classList.add('active'); }
+}
+function showLogin()   { goToScreen('screen-login'); }
+function showRegister(){ goToScreen('screen-register'); }
+
+/* ── Login panel password toggle ── */
+function toggleLP(){var i=document.getElementById('lpass');var ic=document.getElementById('lEyeIco');i.type=i.type==='password'?'text':'password';ic.classList.toggle('fa-eye');ic.classList.toggle('fa-eye-slash');}
 </script>
 </body>
 </html>
