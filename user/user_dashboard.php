@@ -2,6 +2,8 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 if(!isset($_SESSION['user_id'])){ header("Location: login.php"); exit(); }
 include("../config/db.php");
+include("navbar.php"); 
+
 
 $user_id = (int)$_SESSION['user_id'];
 $success_msg = '';
@@ -150,14 +152,6 @@ body{background:#0d0d0d;color:#f0ece4;font-family:'DM Sans',sans-serif;min-heigh
 </head>
 <body>
 
-<div class="topbar">
-    <a href="index.php" class="topbar-brand"><span>E-Library</span></a>
-    <div class="topbar-right">
-        <span class="topbar-user">Hi, <strong><?php echo htmlspecialchars(explode(' ',$user['name'])[0]); ?></strong></span>
-        <a href="index.php" class="btn-home"><i class="fa-solid fa-house" style="margin-right:5px;"></i>Home</a>
-        <a href="logout.php" class="btn-logout"><i class="fa-solid fa-right-from-bracket" style="margin-right:5px;"></i>Logout</a>
-    </div>
-</div>
 
 <div class="dash-wrap">
 
@@ -313,5 +307,8 @@ elseif($error_msg && isset($_POST['change_password'])) echo "sw('password',docum
 elseif($error_msg && isset($_POST['update_profile'])) echo "sw('profile',document.querySelectorAll('.tab-btn')[1]);";
 ?>
 </script>
+
+<?php include("footer.php"); ?>
+
 </body>
 </html>

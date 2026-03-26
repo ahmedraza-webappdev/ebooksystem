@@ -11,7 +11,7 @@ $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['searc
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EBook Library | Home</title>
+<!-- <title>EBook Library | Home</title>  -->
 <style>
 html{scroll-behavior:smooth;}
 .hero{position:relative;padding:110px 30px 90px;text-align:center;overflow:hidden;}
