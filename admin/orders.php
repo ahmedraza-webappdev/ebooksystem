@@ -5,270 +5,234 @@ include("../config/db.php");
 
 // ─── ACTION HANDLERS ─────────────────────────────────────────────────────────
 
-// STEP 1: Admin Payment Approve kare → payment_status = Paid, order_status = Confirmed
 if(isset($_GET['approve']) && is_numeric($_GET['approve'])){
     $id = (int)$_GET['approve'];
     mysqli_query($conn, "UPDATE orders SET payment_status='Paid', order_status='Confirmed' WHERE id=$id");
     header("Location: orders.php?msg=approved"); exit();
 }
 
-// STEP 2: Admin Dispatch kare → order_status = Dispatched
+if(isset($_GET['reject']) && is_numeric($_GET['reject'])){
+    $id = (int)$_GET['reject'];
+    mysqli_query($conn, "UPDATE orders SET payment_status='Rejected', order_status='Cancelled' WHERE id=$id");
+    header("Location: orders.php?msg=rejected"); exit();
+}
+
 if(isset($_GET['dispatch']) && is_numeric($_GET['dispatch'])){
     $id = (int)$_GET['dispatch'];
     mysqli_query($conn, "UPDATE orders SET order_status='Dispatched' WHERE id=$id");
     header("Location: orders.php?msg=dispatched"); exit();
 }
 
-// STEP 3: Admin Deliver kare → order_status = Delivered + user_books mein insert
 if(isset($_GET['deliver']) && is_numeric($_GET['deliver'])){
     $id = (int)$_GET['deliver'];
     $ord = mysqli_fetch_assoc(mysqli_query($conn, "SELECT * FROM orders WHERE id=$id"));
     if($ord){
         mysqli_query($conn, "UPDATE orders SET order_status='Delivered' WHERE id=$id");
-        $exists = mysqli_fetch_assoc(mysqli_query($conn,
-            "SELECT id FROM user_books WHERE user_id='{$ord['user_id']}' AND book_id='{$ord['book_id']}'"
-        ));
+        $exists = mysqli_fetch_assoc(mysqli_query($conn, "SELECT id FROM user_books WHERE user_id='{$ord['user_id']}' AND book_id='{$ord['book_id']}'"));
         if(!$exists){
-            mysqli_query($conn,
-                "INSERT INTO user_books (user_id, book_id, unlocked_at)
-                 VALUES ('{$ord['user_id']}', '{$ord['book_id']}', NOW())"
-            );
+            mysqli_query($conn, "INSERT INTO user_books (user_id, book_id, unlocked_at) VALUES ('{$ord['user_id']}', '{$ord['book_id']}', NOW())");
         }
     }
     header("Location: orders.php?msg=delivered"); exit();
 }
 
-// ─── PAGE SETUP ──────────────────────────────────────────────────────────────
-$page_title    = "Orders";
-$page_subtitle = "Manage and track all book purchases";
+$page_title = "Order Management";
 include("admin_header.php");
 
-$sql = "SELECT o.*, b.title AS book_title, b.book_image,
-               u.name AS user_name, u.phone AS user_phone
+// Stats Logic
+$c_pending   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM orders WHERE order_status='Pending' OR order_status='' OR order_status IS NULL"))['c'];
+$c_confirmed = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM orders WHERE order_status='Confirmed'"))['c'];
+$c_dispatch  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM orders WHERE order_status='Dispatched'"))['c'];
+$c_delivered = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM orders WHERE order_status='Delivered'"))['c'];
+
+$sql = "SELECT o.*, b.title AS book_title, b.book_image, u.name AS user_name, u.phone AS user_phone
         FROM orders o
         JOIN books b ON o.book_id = b.id
         LEFT JOIN users u ON o.user_id = u.id
         ORDER BY o.id DESC";
 $result = mysqli_query($conn, $sql);
-
-$c_pending   = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM orders WHERE order_status='Pending' OR order_status IS NULL OR order_status=''"))['c'];
-$c_confirmed = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM orders WHERE order_status='Confirmed'"))['c'];
-$c_dispatch  = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM orders WHERE order_status='Dispatched'"))['c'];
-$c_delivered = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) c FROM orders WHERE order_status='Delivered'"))['c'];
 ?>
 
-<script>
-<?php if(isset($_GET['msg'])): $m = $_GET['msg']; ?>
-const alerts = {
-    approved:   { icon:'success', title:'Payment Approved!',  text:'Order is now Confirmed.' },
-    dispatched: { icon:'info',    title:'Order Dispatched!',  text:'Marked as Shipped.' },
-    delivered:  { icon:'success', title:'Order Delivered!',   text:"Book unlocked in user's My Books!" },
-};
-if(alerts['<?php echo htmlspecialchars($m); ?>'])
-    Swal.fire({ ...alerts['<?php echo htmlspecialchars($m); ?>'], timer:2800, showConfirmButton:false });
-<?php endif; ?>
-</script>
+<style>
+    :root {
+        --gold: #c9a84c;
+        --success: #00ff87;
+        --danger: #ff4b2b;
+        --info: #00d2ff;
+        --warning: #f9d423;
+    }
 
-<!-- ── STAT CARDS ─────────────────────────────────────────────────────────── -->
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;">
-    <div style="background:#141920;border:1px solid #1e2530;border-radius:10px;padding:18px;">
-        <div style="width:38px;height:38px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.18);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#f59e0b;margin-bottom:12px;">
-            <i class="fa-solid fa-clock" style="font-size:0.9rem;"></i>
-        </div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:700;color:#fff;line-height:1;"><?php echo $c_pending; ?></div>
-        <div style="font-size:0.7rem;color:#4a5568;margin-top:4px;font-weight:600;">Pending</div>
+    /* 💎 Premium Action Buttons */
+    .btn-action {
+        border: none;
+        padding: 9px 16px;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        color: #fff;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        filter: brightness(1.2);
+    }
+
+    /* Color Palette */
+    .btn-approve { background: linear-gradient(45deg, #00b09b, #96c93d); } /* Green Mint */
+    .btn-reject { background: linear-gradient(45deg, #ee0979, #ff6a00); } /* Hot Coral */
+    .btn-dispatch { background: linear-gradient(45deg, #f9d423, #ff4e50); color: #000; } /* Sunset Yellow */
+    .btn-deliver { background: linear-gradient(45deg, #00c6ff, #0072ff); } /* Royal Blue */
+
+    .completed-text {
+        background: rgba(0, 255, 135, 0.1);
+        color: var(--success);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.65rem;
+        font-weight: 900;
+        border: 1px solid rgba(0, 255, 135, 0.2);
+    }
+
+    /* Proof Link Styling */
+    .view-proof-link {
+        color: var(--gold);
+        font-size: 0.68rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: block;
+        margin-top: 6px;
+        transition: 0.3s;
+    }
+    .view-proof-link:hover { color: #fff; text-shadow: 0 0 5px var(--gold); }
+
+    /* Modal Glassmorphism */
+    #proofModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; justify-content:center; align-items:center; backdrop-filter: blur(8px); }
+    .modal-box { position:relative; max-width:420px; width:90%; background:#1a1f28; padding:15px; border-radius:20px; border:1px solid rgba(201,168,76,0.3); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    .close-btn { position:absolute; top:-10px; right:-10px; background:var(--gold); color:#000; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; font-weight:900; }
+</style>
+
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:15px; margin-bottom:30px;">
+    <div style="background: linear-gradient(135deg, #141920, #1c2333); padding:20px; border-radius:15px; border-bottom:3px solid var(--warning);">
+        <div style="font-size:0.6rem; color:#8b949e; letter-spacing:1px;">WAITING</div>
+        <h2 style="margin:5px 0; color:var(--warning);"><?php echo $c_pending; ?></h2>
     </div>
-    <div style="background:#141920;border:1px solid #1e2530;border-radius:10px;padding:18px;">
-        <div style="width:38px;height:38px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.18);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#818cf8;margin-bottom:12px;">
-            <i class="fa-solid fa-circle-check" style="font-size:0.9rem;"></i>
-        </div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:700;color:#fff;line-height:1;"><?php echo $c_confirmed; ?></div>
-        <div style="font-size:0.7rem;color:#4a5568;margin-top:4px;font-weight:600;">Confirmed</div>
+    <div style="background: linear-gradient(135deg, #141920, #1c2333); padding:20px; border-radius:15px; border-bottom:3px solid var(--success);">
+        <div style="font-size:0.6rem; color:#8b949e; letter-spacing:1px;">CONFIRMED</div>
+        <h2 style="margin:5px 0; color:var(--success);"><?php echo $c_confirmed; ?></h2>
     </div>
-    <div style="background:#141920;border:1px solid #1e2530;border-radius:10px;padding:18px;">
-        <div style="width:38px;height:38px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.18);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#c9a84c;margin-bottom:12px;">
-            <i class="fa-solid fa-truck" style="font-size:0.9rem;"></i>
-        </div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:700;color:#fff;line-height:1;"><?php echo $c_dispatch; ?></div>
-        <div style="font-size:0.7rem;color:#4a5568;margin-top:4px;font-weight:600;">Dispatched</div>
+    <div style="background: linear-gradient(135deg, #141920, #1c2333); padding:20px; border-radius:15px; border-bottom:3px solid var(--gold);">
+        <div style="font-size:0.6rem; color:#8b949e; letter-spacing:1px;">ON THE WAY</div>
+        <h2 style="margin:5px 0; color:var(--gold);"><?php echo $c_dispatch; ?></h2>
     </div>
-    <div style="background:#141920;border:1px solid #1e2530;border-radius:10px;padding:18px;">
-        <div style="width:38px;height:38px;background:rgba(74,122,89,0.08);border:1px solid rgba(74,122,89,0.18);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#4a7a59;margin-bottom:12px;">
-            <i class="fa-solid fa-box-open" style="font-size:0.9rem;"></i>
-        </div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:700;color:#fff;line-height:1;"><?php echo $c_delivered; ?></div>
-        <div style="font-size:0.7rem;color:#4a5568;margin-top:4px;font-weight:600;">Delivered</div>
+    <div style="background: linear-gradient(135deg, #141920, #1c2333); padding:20px; border-radius:15px; border-bottom:3px solid var(--info);">
+        <div style="font-size:0.6rem; color:#8b949e; letter-spacing:1px;">DELIVERED</div>
+        <h2 style="margin:5px 0; color:var(--info);"><?php echo $c_delivered; ?></h2>
     </div>
 </div>
 
-<!-- ── ORDERS TABLE ───────────────────────────────────────────────────────── -->
-<div class="section-card">
-    <div class="section-header">
-        <h3><i class="fa-solid fa-cart-shopping" style="color:#6366f1;margin-right:8px;"></i>All Orders</h3>
-    </div>
-    <table>
+<div class="section-card" style="background:#141920; border-radius:18px; padding:25px; border:1px solid rgba(255,255,255,0.05);">
+    <h3 style="margin-bottom:25px; font-family:'Cormorant Garamond',serif; color:#fff; font-size:1.5rem;"><i class="fa-solid fa-receipt" style="color:var(--gold);"></i> Manage All Orders</h3>
+    
+    <table style="width:100%; border-collapse: separate; border-spacing: 0 12px;">
         <thead>
-            <tr>
-                <th>Order ID</th>
-                <th>Customer</th>
-                <th>Book</th>
-                <th>Type</th>
+            <tr style="text-align:left; font-size:0.65rem; color:#4a5568; text-transform:uppercase; letter-spacing:1.5px;">
+                <th style="padding:0 15px;">ID</th>
+                <th>User Details</th>
+                <th>Order Items</th>
                 <th style="text-align:center;">Payment</th>
-                <th style="text-align:center;">Order Status</th>
-                <th style="text-align:center;">Action</th>
+                <th style="text-align:center;">Actions</th>
             </tr>
         </thead>
         <tbody>
-        <?php if(mysqli_num_rows($result) > 0): ?>
-        <?php while($row = mysqli_fetch_assoc($result)):
-            $os = trim($row['order_status']);
-            $ps = trim($row['payment_status']);
-            if(empty($os)) $os = 'Pending';
-            if(empty($ps)) $ps = 'Pending';
-        ?>
-        <tr>
-            <td style="font-size:0.75rem;font-weight:800;color:#c9a84c;">
-                #ORD-<?php echo str_pad($row['id'],3,'0',STR_PAD_LEFT); ?>
-            </td>
-            <td>
-                <div style="font-weight:700;color:#e2e8f0;font-size:0.82rem;"><?php echo htmlspecialchars($row['user_name'] ?? 'Guest'); ?></div>
-                <div style="font-size:0.7rem;color:#4a5568;"><?php echo htmlspecialchars($row['user_phone'] ?? ''); ?></div>
-            </td>
-            <td>
-                <div style="display:flex;align-items:center;gap:9px;">
-                    <img src="../uploads/covers/<?php echo htmlspecialchars($row['book_image']); ?>"
-                         style="width:32px;height:42px;object-fit:cover;border-radius:4px;flex-shrink:0;"
-                         onerror="this.style.display='none'">
-                    <div style="font-weight:600;color:#e2e8f0;font-size:0.8rem;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                        <?php echo htmlspecialchars($row['book_title']); ?>
-                    </div>
-                </div>
-            </td>
-            <td><span class="badge badge-category"><?php echo htmlspecialchars($row['order_type']); ?></span></td>
-
-            <!-- Payment Badge -->
-            <td style="text-align:center;">
-                <?php if($ps === 'Paid'): ?>
-                    <span style="background:rgba(74,122,89,0.1);color:#4a7a59;border:1px solid rgba(74,122,89,0.25);padding:4px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;display:inline-block;">
-                        <i class="fa-solid fa-check" style="margin-right:3px;"></i>Paid
-                    </span>
-                <?php else: ?>
-                    <span style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);padding:4px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;display:inline-block;">
-                        <i class="fa-solid fa-clock" style="margin-right:3px;"></i>Pending
-                    </span>
-                <?php endif; ?>
-            </td>
-
-            <!-- Order Status Badge -->
-            <td style="text-align:center;">
-                <?php if($os === 'Pending'): ?>
-                    <span style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);padding:4px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;display:inline-block;">
-                        <i class="fa-solid fa-hourglass-half" style="margin-right:3px;"></i>Pending
-                    </span>
-                <?php elseif($os === 'Confirmed'): ?>
-                    <span style="background:rgba(99,102,241,0.1);color:#818cf8;border:1px solid rgba(99,102,241,0.25);padding:4px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;display:inline-block;">
-                        <i class="fa-solid fa-circle-check" style="margin-right:3px;"></i>Confirmed
-                    </span>
-                <?php elseif($os === 'Dispatched'): ?>
-                    <span style="background:rgba(201,168,76,0.1);color:#c9a84c;border:1px solid rgba(201,168,76,0.25);padding:4px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;display:inline-block;">
-                        <i class="fa-solid fa-truck" style="margin-right:3px;"></i>Dispatched
-                    </span>
-                <?php elseif($os === 'Delivered'): ?>
-                    <span style="background:rgba(74,122,89,0.1);color:#4a7a59;border:1px solid rgba(74,122,89,0.25);padding:4px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;display:inline-block;">
-                        <i class="fa-solid fa-box-open" style="margin-right:3px;"></i>Delivered
-                    </span>
-                <?php endif; ?>
-            </td>
-
-            <!-- ACTION BUTTONS -->
-            <td style="text-align:center;min-width:160px;">
-                <?php if($os === 'Pending'): ?>
-                    <button onclick="doApprove(<?php echo $row['id']; ?>)"
-                        style="background:rgba(74,122,89,0.15);color:#4a7a59;border:1px solid rgba(74,122,89,0.35);padding:7px 13px;border-radius:7px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:0.2s;white-space:nowrap;"
-                        onmouseover="this.style.background='#4a7a59';this.style.color='#fff'"
-                        onmouseout="this.style.background='rgba(74,122,89,0.15)';this.style.color='#4a7a59'">
-                        <i class="fa-solid fa-check"></i> Approve Payment
-                    </button>
-
-                <?php elseif($os === 'Confirmed'): ?>
-                    <button onclick="doDispatch(<?php echo $row['id']; ?>)"
-                        style="background:rgba(201,168,76,0.12);color:#c9a84c;border:1px solid rgba(201,168,76,0.35);padding:7px 13px;border-radius:7px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:0.2s;white-space:nowrap;"
-                        onmouseover="this.style.background='#c9a84c';this.style.color='#0d0d0d'"
-                        onmouseout="this.style.background='rgba(201,168,76,0.12)';this.style.color='#c9a84c'">
-                        <i class="fa-solid fa-truck"></i> Mark Dispatched
-                    </button>
-
-                <?php elseif($os === 'Dispatched'): ?>
-                    <button onclick="doDeliver(<?php echo $row['id']; ?>)"
-                        style="background:rgba(99,102,241,0.12);color:#818cf8;border:1px solid rgba(99,102,241,0.35);padding:7px 13px;border-radius:7px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:0.2s;white-space:nowrap;"
-                        onmouseover="this.style.background='#6366f1';this.style.color='#fff'"
-                        onmouseout="this.style.background='rgba(99,102,241,0.12)';this.style.color='#818cf8'">
-                        <i class="fa-solid fa-box-open"></i> Mark Delivered
-                    </button>
-
-                <?php else: ?>
-                    <span style="font-size:0.72rem;color:#4a7a59;font-weight:700;">
-                        <i class="fa-solid fa-circle-check"></i> Complete
-                    </span>
-                <?php endif; ?>
-            </td>
-        </tr>
-        <?php endwhile; ?>
-        <?php else: ?>
-            <tr>
-                <td colspan="7" style="text-align:center;padding:50px;color:#4a5568;">
-                    <i class="fa-solid fa-cart-shopping" style="font-size:2.5rem;display:block;margin-bottom:12px;opacity:0.2;color:var(--gold);"></i>
-                    No orders found.
+            <?php while($row = mysqli_fetch_assoc($result)): 
+                $os = $row['order_status'] ?: 'Pending';
+                $ps = $row['payment_status'] ?: 'Pending';
+            ?>
+            <tr style="background: rgba(255,255,255,0.02); transition: 0.3s;">
+                <td style="padding:20px 15px; border-radius:12px 0 0 12px; font-weight:900; color:var(--gold);">#<?php echo $row['id']; ?></td>
+                <td>
+                    <div style="font-weight:700; font-size:0.9rem;"><?php echo htmlspecialchars($row['user_name']); ?></div>
+                    <div style="font-size:0.75rem; color:#8b949e;"><i class="fa-solid fa-phone" style="font-size:0.6rem;"></i> <?php echo htmlspecialchars($row['user_phone']); ?></div>
+                </td>
+                <td>
+                    <div style="font-weight:600; font-size:0.85rem;"><?php echo htmlspecialchars($row['book_title']); ?></div>
+                    <span style="font-size:0.6rem; color:var(--gold); border:1px solid var(--gold); padding:1px 6px; border-radius:4px;"><?php echo $row['order_type']; ?></span>
+                </td>
+                <td style="text-align:center;">
+                    <?php if($ps === 'Paid'): ?>
+                        <div style="color:var(--success); font-size:0.7rem; font-weight:700;"><i class="fa-solid fa-check-circle"></i> VERIFIED</div>
+                    <?php elseif($ps === 'Rejected'): ?>
+                        <div style="color:var(--danger); font-size:0.7rem; font-weight:700;"><i class="fa-solid fa-ban"></i> REJECTED</div>
+                    <?php else: ?>
+                        <div style="color:var(--warning); font-size:0.7rem; font-weight:700;"><i class="fa-solid fa-hourglass"></i> PENDING</div>
+                        <?php if(!empty($row['payment_proof'])): ?>
+                            <span class="view-proof-link" onclick="viewProof('../uploads/payments/<?php echo $row['payment_proof']; ?>')"><i class="fa-solid fa-eye"></i> View Proof</span>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </td>
+                <td style="text-align:center; border-radius:0 12px 12px 0;">
+                    <?php if($os === 'Pending' || $os === ''): ?>
+                        <button class="btn-action btn-approve" onclick="doApprove(<?php echo $row['id']; ?>)"><i class="fa-solid fa-check"></i></button>
+                        <button class="btn-action btn-reject" onclick="doReject(<?php echo $row['id']; ?>)"><i class="fa-solid fa-xmark"></i></button>
+                    <?php elseif($os === 'Confirmed'): ?>
+                        <button class="btn-action btn-dispatch" onclick="doDispatch(<?php echo $row['id']; ?>)"><i class="fa-solid fa-truck-fast"></i> Dispatch</button>
+                    <?php elseif($os === 'Dispatched'): ?>
+                        <button class="btn-action btn-deliver" onclick="doDeliver(<?php echo $row['id']; ?>)"><i class="fa-solid fa-box-check"></i> Mark Delivered</button>
+                    <?php else: ?>
+                        <span class="completed-text"><i class="fa-solid fa-circle-check"></i> DELIVERED</span>
+                    <?php endif; ?>
                 </td>
             </tr>
-        <?php endif; ?>
+            <?php endwhile; ?>
         </tbody>
     </table>
 </div>
 
-<!-- Flow Legend -->
-<div style="background:#141920;border:1px solid #1e2530;border-radius:10px;padding:14px 20px;margin-top:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-    <span style="font-size:0.65rem;font-weight:700;color:#4a5568;text-transform:uppercase;letter-spacing:0.1em;">Order Flow:</span>
-    <span style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);padding:3px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;"><i class="fa-solid fa-hourglass-half" style="margin-right:3px;"></i>Pending</span>
-    <i class="fa-solid fa-arrow-right" style="color:#2d3748;font-size:0.65rem;"></i>
-    <span style="background:rgba(74,122,89,0.1);color:#4a7a59;border:1px solid rgba(74,122,89,0.2);padding:3px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;"><i class="fa-solid fa-check" style="margin-right:3px;"></i>Approve → Paid + Confirmed</span>
-    <i class="fa-solid fa-arrow-right" style="color:#2d3748;font-size:0.65rem;"></i>
-    <span style="background:rgba(201,168,76,0.1);color:#c9a84c;border:1px solid rgba(201,168,76,0.2);padding:3px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;"><i class="fa-solid fa-truck" style="margin-right:3px;"></i>Dispatched</span>
-    <i class="fa-solid fa-arrow-right" style="color:#2d3748;font-size:0.65rem;"></i>
-    <span style="background:rgba(74,122,89,0.1);color:#4a7a59;border:1px solid rgba(74,122,89,0.2);padding:3px 10px;border-radius:20px;font-size:0.62rem;font-weight:700;"><i class="fa-solid fa-box-open" style="margin-right:3px;"></i>Delivered + Book Unlocked</span>
+<div id="proofModal">
+    <div class="modal-box">
+        <button class="close-btn" onclick="closeProof()">×</button>
+        <h4 style="color:var(--gold); margin-bottom:15px; font-family:'Cormorant Garamond',serif; text-align:center;">Payment Verification</h4>
+        <img id="proofImg" src="" style="width:100%; border-radius:12px; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));">
+    </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+function viewProof(url) {
+    document.getElementById('proofImg').src = url;
+    document.getElementById('proofModal').style.display = 'flex';
+}
+function closeProof() {
+    document.getElementById('proofModal').style.display = 'none';
+}
+
 function doApprove(id){
     Swal.fire({
-        title: 'Approve Payment?',
-        html: 'The Payment will be marked as <b>Paid</b> and your order will be <b>Confirmed</b> .',
-        icon: 'question', showCancelButton: true,
-        confirmButtonColor: '#4a7a59', cancelButtonColor: '#374151',
-        confirmButtonText: '<i class="fa-solid fa-check"></i> Approve ',
-        cancelButtonText: 'Cancel'
-    }).then(r => { if(r.isConfirmed) window.location.href = 'orders.php?approve=' + id; });
+        title: 'Confirm Payment?', text: "This will unlock the book for the user.",
+        icon: 'success', showCancelButton: true, confirmButtonColor: '#00b09b', confirmButtonText: 'Yes, Approve'
+    }).then((r) => { if (r.isConfirmed) window.location.href = 'orders.php?approve=' + id; });
 }
-function doDispatch(id){
+function doReject(id){
     Swal.fire({
-        title: 'Mark as Dispatched?',
-        html: 'Your Order has been <b>shipped </b> Plz confirm Once you Recived.',
-        icon: 'info', showCancelButton: true,
-        confirmButtonColor: '#c9a84c', cancelButtonColor: '#374151',
-        confirmButtonText: '<i class="fa-solid fa-truck"></i> Dispatch Karo',
-        cancelButtonText: 'Cancel'
-    }).then(r => { if(r.isConfirmed) window.location.href = 'orders.php?dispatch=' + id; });
+        title: 'Reject Order?', text: "Use this for fake or missing payments.",
+        icon: 'error', showCancelButton: true, confirmButtonColor: '#ee0979', confirmButtonText: 'Yes, Reject'
+    }).then((r) => { if (r.isConfirmed) window.location.href = 'orders.php?reject=' + id; });
 }
-function doDeliver(id){
-    Swal.fire({
-        title: 'Mark as Delivered?',
-        html: 'The Order will be Marked as <b>Delivered</b> and the book will be  <b>Unlocked</b> in the user <b>My Book</b> Section!',
-        icon: 'success', showCancelButton: true,
-        confirmButtonColor: '#6366f1', cancelButtonColor: '#374151',
-        confirmButtonText: '<i class="fa-solid fa-box-open"></i> Delivered Mark Karo',
-        cancelButtonText: 'Cancel'
-    }).then(r => { if(r.isConfirmed) window.location.href = 'orders.php?deliver=' + id; });
-}
+function doDispatch(id){ window.location.href = 'orders.php?dispatch=' + id; }
+function doDeliver(id){ window.location.href = 'orders.php?deliver=' + id; }
+
+<?php if(isset($_GET['msg'])): ?>
+    Swal.fire({ title: 'Updated!', icon: 'success', timer: 1500, showConfirmButton: false, background: '#141920', color: '#fff' });
+<?php endif; ?>
 </script>
 
 <?php include("admin_footer.php"); ?>

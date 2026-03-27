@@ -2,7 +2,9 @@
 ob_start();
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
+// 1. Connection check karein
 include("../config/db.php");
+if (!$conn) { die("Connection failed: " . mysqli_connect_error()); }
 
 if(!isset($_SESSION['temp_order'])){ 
     header("Location: index.php"); 
@@ -16,17 +18,20 @@ $order_type = $order['type'];
 $book_res = mysqli_query($conn, "SELECT * FROM books WHERE id='$book_id'");
 $book_data = mysqli_fetch_assoc($book_res);
 
-// ✅ VALIDATION + Form Handling
 $error_msg = '';
 if(isset($_POST['confirm_final'])){
+    // 2. Session check karein
+    if(!isset($_SESSION['user_id'])){
+        die("Error: User Session Expired! Please login again.");
+    }
+    
     $u_id = $_SESSION['user_id'];
     $payment_method = mysqli_real_escape_string($conn, $_POST['payment_method']);
     $total = $order['total'];
     $screenshot_name = NULL;
 
-    // ✅ PHP Server-side: Screenshot zaroori hai agar COD nahi
     if($payment_method !== 'Cash on Delivery'){
-        if(!isset($_FILES['payment_screenshot']) || $_FILES['payment_screenshot']['error'] != 0 || $_FILES['payment_screenshot']['size'] == 0){
+        if(!isset($_FILES['payment_screenshot']) || $_FILES['payment_screenshot']['error'] != 0){
             $error_msg = "Payment screenshot upload karna zaroori hai!";
         } else {
             $target_dir = "../uploads/payments/";
@@ -39,9 +44,11 @@ if(isset($_POST['confirm_final'])){
 
     if($error_msg == ''){
         $addr = "Name: ".$order['full_name']." | Phone: ".$order['phone']." | Addr: ".$order['address'];
+        $addr = mysqli_real_escape_string($conn, $addr);
 
+        // 3. Query ko variable mein save karke print karwayein agar fail ho
         $sql = "INSERT INTO orders (user_id, book_id, order_type, shipping_address, total_price, payment_status, payment_proof, order_status, created_at) 
-                VALUES ('$u_id', '$book_id', '$order_type', '$addr', '$total', '$payment_method', '$screenshot_name', 'Processing', NOW())";
+                VALUES ('$u_id', '$book_id', '$order_type', '$addr', '$total', 'Pending', '$screenshot_name', 'Pending', NOW())";
         
         if(mysqli_query($conn, $sql)){
             $_SESSION['last_order_id'] = mysqli_insert_id($conn);
@@ -49,11 +56,17 @@ if(isset($_POST['confirm_final'])){
             header("Location: success.php");
             exit();
         } else {
-            die("Database Error: " . mysqli_error($conn));
+            // YAHAN ERROR MILEGA
+            echo "<div style='background:white; color:red; padding:20px; border:5px solid red;'>";
+            echo "<h3>SQL Query Failed!</h3>";
+            echo "<b>Error:</b> " . mysqli_error($conn) . "<br><br>";
+            echo "<b>Your Query:</b> " . $sql;
+            echo "</div>";
+            exit();
         }
     }
 }
-
+// ... Baqi niche ka HTML same ...
 include("navbar.php");
 ?>
 <!DOCTYPE html>
