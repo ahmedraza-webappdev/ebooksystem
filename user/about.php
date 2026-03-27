@@ -7,7 +7,7 @@ include("../config/db.php");
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>About Us | E-Library</title>
+<title>About Us | Book-Astra</title>
 <style>
 .about-hero{background:#141920;border-bottom:1px solid rgba(255,255,255,0.07);padding:72px 30px;text-align:center;position:relative;overflow:hidden;}
 .about-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 80% at 50% 0%,rgba(201,168,76,0.07) 0%,transparent 70%);pointer-events:none;}
@@ -79,7 +79,7 @@ include("../config/db.php");
 <!-- HERO -->
 <div class="about-hero">
   <span class="eyebrow">✦ Our Story</span>
-  <h1>About E-Library</h1>
+  <h1>About Book-Astra</h1>
   <p>Your trusted partner in the world of books, knowledge, and literary excellence in Pakistan.</p>
 </div>
 
@@ -89,7 +89,7 @@ include("../config/db.php");
   <div class="story-grid">
     <div class="story-text">
       <h2>Our Story</h2>
-      <p>E-Library is a leading online publishing platform dedicated to connecting readers with quality books across all genres. From novels to academic journals, we bring the world of literature right to your fingertips.</p>
+      <p>Book-Astra is a leading online publishing platform dedicated to connecting readers with quality books across all genres. From novels to academic journals, we bring the world of literature right to your fingertips.</p>
       <p>Founded with a deep passion for reading and learning, we have grown to serve thousands of readers across Pakistan and around the globe. Our platform offers books in multiple formats — PDF and Hard Copy — to suit every reader's preference.</p>
       <p>We also run exciting essay competitions that give talented writers a platform to showcase their skills and win meaningful prizes — nurturing the next generation of Pakistani authors.</p>
     </div>

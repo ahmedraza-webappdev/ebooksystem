@@ -11,12 +11,14 @@ if(isset($_GET['search'])){
     $sql = "SELECT books.* FROM books 
             INNER JOIN orders ON books.id = orders.book_id 
             WHERE orders.user_id = '$user_id' 
+            AND orders.order_status = 'Delivered' 
             AND (books.title LIKE '%$search%' OR books.author LIKE '%$search%')
             GROUP BY books.id";
 } else {
     $sql = "SELECT books.* FROM books 
             INNER JOIN orders ON books.id = orders.book_id 
             WHERE orders.user_id = '$user_id'
+            AND orders.order_status = 'Delivered' 
             GROUP BY books.id 
             ORDER BY orders.id DESC";
 }

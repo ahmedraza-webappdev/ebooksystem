@@ -1,10 +1,9 @@
 <?php
-ob_start(); // 1. Start output buffering to prevent header errors
+ob_start();
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 
 include("../config/db.php");
 
-// 2. Security Check: MUST happen before navbar or any HTML
 if(!isset($_SESSION['temp_order'])){ 
     header("Location: index.php"); 
     exit(); 
@@ -17,28 +16,44 @@ $order_type = $order['type'];
 $book_res = mysqli_query($conn, "SELECT * FROM books WHERE id='$book_id'");
 $book_data = mysqli_fetch_assoc($book_res);
 
-// 3. Form Handling (Before Navbar)
+// ✅ VALIDATION + Form Handling
+$error_msg = '';
 if(isset($_POST['confirm_final'])){
     $u_id = $_SESSION['user_id'];
-    $addr = "Name: ".$order['full_name']." | Phone: ".$order['phone']." | Addr: ".$order['address'];
-    $total = $order['total'];
     $payment_method = mysqli_real_escape_string($conn, $_POST['payment_method']);
-    
-    // Note: Ensure these column names match your SQL table perfectly
-    $sql = "INSERT INTO orders (user_id, book_id, order_type, shipping_address, total_price, payment_status, order_status, created_at) 
-            VALUES ('$u_id', '$book_id', '$order_type', '$addr', '$total', '$payment_method', 'Processing', NOW())";
-    
-    if(mysqli_query($conn, $sql)){
-        $_SESSION['last_order_id'] = mysqli_insert_id($conn);
-        unset($_SESSION['temp_order']); 
-        header("Location: success.php");
-        exit();
-    } else {
-        die("Database Error: " . mysqli_error($conn));
+    $total = $order['total'];
+    $screenshot_name = NULL;
+
+    // ✅ PHP Server-side: Screenshot zaroori hai agar COD nahi
+    if($payment_method !== 'Cash on Delivery'){
+        if(!isset($_FILES['payment_screenshot']) || $_FILES['payment_screenshot']['error'] != 0 || $_FILES['payment_screenshot']['size'] == 0){
+            $error_msg = "Payment screenshot upload karna zaroori hai!";
+        } else {
+            $target_dir = "../uploads/payments/";
+            if (!is_dir($target_dir)) { mkdir($target_dir, 0777, true); }
+            $file_ext = pathinfo($_FILES["payment_screenshot"]["name"], PATHINFO_EXTENSION);
+            $screenshot_name = "PAY_" . time() . "_" . $u_id . "." . $file_ext;
+            move_uploaded_file($_FILES["payment_screenshot"]["tmp_name"], $target_dir . $screenshot_name);
+        }
+    }
+
+    if($error_msg == ''){
+        $addr = "Name: ".$order['full_name']." | Phone: ".$order['phone']." | Addr: ".$order['address'];
+
+        $sql = "INSERT INTO orders (user_id, book_id, order_type, shipping_address, total_price, payment_status, payment_proof, order_status, created_at) 
+                VALUES ('$u_id', '$book_id', '$order_type', '$addr', '$total', '$payment_method', '$screenshot_name', 'Processing', NOW())";
+        
+        if(mysqli_query($conn, $sql)){
+            $_SESSION['last_order_id'] = mysqli_insert_id($conn);
+            unset($_SESSION['temp_order']); 
+            header("Location: success.php");
+            exit();
+        } else {
+            die("Database Error: " . mysqli_error($conn));
+        }
     }
 }
 
-// 4. NOW include the navbar
 include("navbar.php");
 ?>
 <!DOCTYPE html>
@@ -77,10 +92,8 @@ include("navbar.php");
         .btn-edit{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);font-size:0.8rem;font-weight:600;padding:13px;border-radius:7px;text-decoration:none;text-align:center;transition:all 0.2s;}
         .btn-place{background:var(--gold);color:#0d0d0d;border:none;font-size:0.84rem;font-weight:700;padding:13px;border-radius:7px;cursor:pointer;transition:background 0.2s;letter-spacing:0.04em;}
         .btn-place:hover{background:var(--gold-light);}
-        /* Fix for Dropdown visibility */
         .dropdown-menu { z-index: 9999 !important; background: #1c2333 !important; border: 1px solid rgba(255,255,255,0.1); }
         .dropdown-item { color: #fff; }
-        /* NEW: Payment Info Card */
         .pay-info-card{background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:20px 22px;margin-bottom:20px;}
         .pay-info-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-weight:700;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
         .pay-numbers{display:grid;gap:10px;}
@@ -93,9 +106,7 @@ include("navbar.php");
         .copy-btn:hover{background:var(--gold);color:#0d0d0d;}
         .pay-note{font-size:0.74rem;color:rgba(255,255,255,0.35);margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:flex-start;gap:7px;line-height:1.6;}
         .pay-note i{color:var(--gold);margin-top:2px;flex-shrink:0;}
-        /* NEW: Sent To Grid */
         .sent-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;}
-        /* NEW: Screenshot Upload */
         .upload-wrap{margin-top:16px;}
         .upload-label-txt{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.35);margin-bottom:8px;display:block;}
         .upload-box{border:1.5px dashed rgba(201,168,76,0.25);border-radius:8px;padding:22px;text-align:center;transition:all 0.2s;position:relative;background:rgba(201,168,76,0.02);}
@@ -105,6 +116,9 @@ include("navbar.php");
         .upload-txt{font-size:0.78rem;color:rgba(255,255,255,0.35);}
         .upload-txt strong{color:var(--gold);}
         .preview-img{max-width:100%;max-height:180px;border-radius:6px;margin-top:12px;display:none;border:1px solid rgba(201,168,76,0.2);}
+        /* ✅ Error styles */
+        .error-alert{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:7px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:0.8rem;color:#f87171;}
+        .upload-box.has-error{border-color:rgba(239,68,68,0.5) !important;background:rgba(239,68,68,0.04) !important;}
     </style>
 </head>
 <body>
@@ -126,7 +140,6 @@ include("navbar.php");
     </div>
   </div>
 
-  <!-- NEW: Payment Numbers Card -->
   <div class="pay-info-card">
     <div class="pay-info-title"><i class="fa-solid fa-money-bill-transfer"></i> Send Payment To</div>
     <div class="pay-numbers">
@@ -153,14 +166,23 @@ include("navbar.php");
     </div>
     <div class="pay-note">
       <i class="fa-solid fa-circle-info"></i>
-      Oopar diye gaye numbers mein se kisi ek par payment send karein, phir neeche screenshot upload karein. Admin confirm karne ke baad order process hoga.
+      Transfer the payment to any of the numbers above and upload the screenshot. Order processing will begin after admin verification.
     </div>
   </div>
 
   <div class="rcard">
     <div class="rcard-head">Select Payment Method</div>
     <div class="rcard-body">
-      <form method="POST" enctype="multipart/form-data">
+
+      <!-- ✅ PHP Server-side error -->
+      <?php if($error_msg != ''): ?>
+      <div class="error-alert">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <?php echo $error_msg; ?>
+      </div>
+      <?php endif; ?>
+
+      <form method="POST" enctype="multipart/form-data" id="orderForm">
         <div class="pay-grid">
           <?php if($order_type == 'Hard Copy'): ?>
           <div>
@@ -182,9 +204,7 @@ include("navbar.php");
           </div>
         </div>
 
-        <!-- NEW: Screenshot Upload -->
         <div class="upload-wrap" id="screenshotWrap" style="<?php echo ($order_type=='Hard Copy') ? 'display:none;' : ''; ?>">
-          <!-- Sent To Number Selector -->
           <span class="upload-label-txt" style="margin-top:4px;"><i class="fa-solid fa-phone" style="margin-right:5px;color:var(--gold);"></i>Kis Number Pe Bheja?</span>
           <div class="sent-grid">
             <div>
@@ -204,11 +224,16 @@ include("navbar.php");
           </div>
 
           <span class="upload-label-txt" style="margin-top:14px;"><i class="fa-solid fa-image" style="margin-right:5px;color:var(--gold);"></i>Payment Screenshot Upload Karein</span>
-          <div class="upload-box">
-            <input type="file" name="payment_screenshot" id="ssFile" accept="image/*" onchange="previewImg(this)">
+          <div class="upload-box" id="uploadBox">
+            <input type="file" name="payment_screenshot" id="ssFile" accept="image/*">
             <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-            <div class="upload-txt"><strong>Click to upload</strong> ya drag & drop karein<br>JPG, PNG, WEBP supported</div>
+            <div class="upload-txt" id="uploadTxt"><strong>Click to upload</strong> ya drag & drop karein<br>JPG, PNG, WEBP supported</div>
             <img id="ssPreview" class="preview-img">
+          </div>
+          <!-- ✅ JS error -->
+          <div class="error-alert" id="jsError" style="display:none;margin-top:10px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            It is mandatory to upload the payment screenshot!
           </div>
         </div>
 
@@ -235,20 +260,56 @@ function copyNum(num, btn) {
         }, 2000);
     });
 }
-function previewImg(input) {
-    const preview = document.getElementById('ssPreview');
-    if(input.files && input.files[0]) {
+
+document.getElementById('ssFile').addEventListener('change', function() {
+    const preview   = document.getElementById('ssPreview');
+    const uploadTxt = document.getElementById('uploadTxt');
+    const uploadBox = document.getElementById('uploadBox');
+    const jsError   = document.getElementById('jsError');
+
+    if(this.files && this.files[0]) {
         const reader = new FileReader();
-        reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
-        reader.readAsDataURL(input.files[0]);
+        reader.onload = e => {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            uploadTxt.innerHTML = '<strong style="color:var(--gold);">✓ ' + this.files[0].name + '</strong>';
+        };
+        reader.readAsDataURL(this.files[0]);
+        uploadBox.classList.remove('has-error');
+        jsError.style.display = 'none';
     }
-}
-// Show/hide screenshot upload based on payment method
-document.querySelectorAll('.pay-option').forEach(radio => {
+});
+
+document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
     radio.addEventListener('change', function() {
-        const wrap = document.getElementById('screenshotWrap');
+        const wrap      = document.getElementById('screenshotWrap');
+        const jsError   = document.getElementById('jsError');
+        const uploadBox = document.getElementById('uploadBox');
         if(wrap) wrap.style.display = (this.value !== 'Cash on Delivery') ? 'block' : 'none';
+        if(jsError) jsError.style.display = 'none';
+        if(uploadBox) uploadBox.classList.remove('has-error');
     });
+});
+
+// ✅ MAIN FIX: Form submit pe screenshot check
+document.getElementById('orderForm').addEventListener('submit', function(e) {
+    const selectedPayment = document.querySelector('input[name="payment_method"]:checked');
+    const ssFile    = document.getElementById('ssFile');
+    const jsError   = document.getElementById('jsError');
+    const uploadBox = document.getElementById('uploadBox');
+
+    if(selectedPayment && selectedPayment.value !== 'Cash on Delivery') {
+        if(!ssFile.files || ssFile.files.length === 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadBox.classList.add('has-error');
+            jsError.style.display = 'flex';
+            jsError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return false;
+        }
+    }
+    jsError.style.display = 'none';
+    uploadBox.classList.remove('has-error');
 });
 </script>
 </body>

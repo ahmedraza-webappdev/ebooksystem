@@ -242,17 +242,17 @@ if(alerts['<?php echo htmlspecialchars($m); ?>'])
 function doApprove(id){
     Swal.fire({
         title: 'Approve Payment?',
-        html: 'Payment <b>Paid</b> ho jayegi aur Order <b>Confirmed</b> ho jayega.',
+        html: 'The Payment will be marked as <b>Paid</b> and your order will be <b>Confirmed</b> .',
         icon: 'question', showCancelButton: true,
         confirmButtonColor: '#4a7a59', cancelButtonColor: '#374151',
-        confirmButtonText: '<i class="fa-solid fa-check"></i> Approve Karo',
+        confirmButtonText: '<i class="fa-solid fa-check"></i> Approve ',
         cancelButtonText: 'Cancel'
     }).then(r => { if(r.isConfirmed) window.location.href = 'orders.php?approve=' + id; });
 }
 function doDispatch(id){
     Swal.fire({
         title: 'Mark as Dispatched?',
-        html: 'Order <b>ship ho gaya</b> confirm karo.',
+        html: 'Your Order has been <b>shipped </b> Plz confirm Once you Recived.',
         icon: 'info', showCancelButton: true,
         confirmButtonColor: '#c9a84c', cancelButtonColor: '#374151',
         confirmButtonText: '<i class="fa-solid fa-truck"></i> Dispatch Karo',
@@ -262,7 +262,7 @@ function doDispatch(id){
 function doDeliver(id){
     Swal.fire({
         title: 'Mark as Delivered?',
-        html: 'Order <b>Delivered</b> hoga aur Book user ke <b>My Books</b> mein <b>unlock</b> ho jayegi!',
+        html: 'The Order will be Marked as <b>Delivered</b> and the book will be  <b>Unlocked</b> in the user <b>My Book</b> Section!',
         icon: 'success', showCancelButton: true,
         confirmButtonColor: '#6366f1', cancelButtonColor: '#374151',
         confirmButtonText: '<i class="fa-solid fa-box-open"></i> Delivered Mark Karo',

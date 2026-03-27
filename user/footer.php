@@ -23,7 +23,7 @@
   <div class="fi">
     <div class="fg">
       <div>
-        <div class="fbrand">📚 <span>E-Library</span></div>
+        <div class="fbrand"><img src="file.svg" alt="logo" style = "height:30px; width:auto; vertical-align:middle;" > <span>Book-Astra</span></div>
         <p class="fdesc">Your ultimate destination for digital knowledge. Read, learn, and grow with thousands of books at your fingertips.</p>
       </div>
       <div>
@@ -39,12 +39,12 @@
       <div>
         <div class="ct">Contact</div>
         <div class="ci"><i class="fa-solid fa-location-dot"></i> Karachi, Pakistan</div>
-        <div class="ci"><i class="fa-regular fa-envelope"></i> help@elibrary.com</div>
-        <div class="ci"><i class="fa-solid fa-phone"></i> +92 300 0000000</div>
+        <div class="ci"><i class="fa-regular fa-envelope"></i> helpBookastra.com</div>
+        <div class="ci"><i class="fa-solid fa-phone"></i> +92 317 0010116</div>
       </div>
     </div>
     <div class="fbot">
-      <div class="copy">© <?php echo date("Y"); ?> E-Library System — All Rights Reserved.</div>
+      <div class="copy">© <?php echo date("Y"); ?> Book-Astra — All Rights Reserved.</div>
       <div class="socials">
         <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
         <a href="#"><i class="fa-brands fa-instagram"></i></a>

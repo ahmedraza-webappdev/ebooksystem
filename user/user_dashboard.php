@@ -187,7 +187,7 @@ body{background:#0d0d0d;color:#f0ece4;font-family:'DM Sans',sans-serif;min-heigh
 
     <div class="tab-panel active" id="tab-orders">
         <?php if(mysqli_num_rows($orders) > 0): ?>
-        <div class="note"><i class="fa-solid fa-circle-info"></i> Admin payment approve karega tab "Confirmed" dikhega. Delivery ke baad book "My Books" mein unlock ho jayegi.</div>
+        <div class="note"><i class="fa-solid fa-circle-info"></i>Once the admin approves the payment, the status will show as 'Confirmed'. After delivery, the book will be unlocked in your 'My Books' section.</div>
         <?php while($row = mysqli_fetch_assoc($orders)):
             $os_raw = strtolower(trim($row['order_status']));
             $ps_raw = strtolower(trim($row['payment_status']));

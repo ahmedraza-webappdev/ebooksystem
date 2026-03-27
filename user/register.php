@@ -22,7 +22,6 @@ if(isset($_POST['register'])){
         if(!mysqli_query($conn, $sql)){
             $sql = "INSERT INTO users(name, email, password, phone) VALUES('$name','$email','$password','$phone')";
             if(mysqli_query($conn, $sql)){
-                // ← Redirect hata diya, ab welcome screen dikhayenge
                 $show_welcome = true;
                 $registered_name  = htmlspecialchars($name);
                 $registered_email = htmlspecialchars($email);
@@ -42,7 +41,6 @@ if(isset($_POST['register'])){
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- <title>Create Account | E-Library</title> -->
 <link rel="icon" type="image/png" href="ebook.png">
 <title>Book-Astra | Your Premium Book Store</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -136,14 +134,30 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
 @keyframes screenIn{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
 
 /* ── Welcome Screen ── */
-.welcome-icon-wrap{text-align:center;margin-bottom:22px;}
-.welcome-badge{display:inline-flex;align-items:center;justify-content:center;width:70px;height:70px;border-radius:50%;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);font-size:1.8rem;}
+.welcome-icon-wrap{text-align:center;margin-bottom:22px;margin-top:10px;}
+.welcome-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:80px;
+  height:80px;
+  border-radius:50%;
+  background:rgba(201,168,76,0.1);
+  border:2px solid rgba(201,168,76,0.35);
+  overflow:hidden;
+}
+.welcome-badge img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
 .welcome-name-gold{color:var(--gold);}
 .welcome-list{list-style:none;margin:20px 0 26px;}
 .welcome-list li{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:8px;background:var(--surface);border:1px solid var(--border);margin-bottom:8px;font-size:0.8rem;color:rgba(255,255,255,0.55);}
 .welcome-list li .wl-ic{width:28px;height:28px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.72rem;}
 
-/* ── Login form extras (re-uses .fg .fi .fl etc.) ── */
+/* ── Login form extras ── */
 .divider-line{display:flex;align-items:center;gap:10px;margin:18px 0;font-size:0.68rem;color:rgba(255,255,255,0.2);}
 .divider-line::before,.divider-line::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06);}
 .btn-outline{width:100%;background:transparent;color:rgba(255,255,255,0.55);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.82rem;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;letter-spacing:0.03em;}
@@ -154,7 +168,7 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
 </head>
 <body>
 
-<!-- ══════════════ LEFT PANEL (unchanged) ══════════════ -->
+<!-- ══════════════ LEFT PANEL ══════════════ -->
 <div class="left-panel">
   <div class="watermark">E</div>
   <div class="q" style="top:7%;left:5%;font-size:0.82rem;--dur:20s;--delay:0s;--rot:-1.5deg;max-width:200px;">"A reader lives a thousand<br>lives before he dies."</div>
@@ -183,10 +197,17 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
 <div class="right-panel">
   <div class="form-wrap">
 
+    <!-- Topbar: Welcome screen pe hide, baaki screens pe show -->
+    <?php if(!$show_welcome): ?>
     <div class="r-topbar">
-      <a href="index.php" class="r-brand">📚 <span>E-Library</span></a>
-      <a href="login.php" class="r-signin"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In</a>
+      <a href="index.php" class="r-brand">
+        <img src="file.svg" alt="Logo" height="40">
+      </a>
+      <a href="login.php" class="r-signin">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+      </a>
     </div>
+    <?php endif; ?>
 
     <!-- ── SCREEN 1: Register Form ── -->
     <div class="screen <?php echo (!$show_welcome) ? 'active' : ''; ?>" id="screen-register">
@@ -213,9 +234,19 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
         </div>
         <div class="fg">
           <i class="fic fa-solid fa-mobile-screen"></i>
-          <input type="text" name="phone" id="fph" class="fi" placeholder="Phone Number" required autocomplete="tel">
+          <input
+            type="tel"
+            name="phone"
+            id="fph"
+            class="fi"
+            placeholder="Phone Number"
+            required
+            autocomplete="tel"
+            maxlength="11"
+          >
           <label class="fl" for="fph">Phone Number</label>
-          <i class="fa-solid fa-check check-mark"></i>
+          <i class="fa-solid fa-check check-mark" id="ph-check"></i>
+          <small class="ph-error" style="color:red;font-size:12px;display:none;margin-left:10px;"></small>
         </div>
         <div class="fg">
           <i class="fic fa-solid fa-location-dot"></i>
@@ -244,11 +275,13 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
     <!-- ── SCREEN 2: Welcome ── -->
     <div class="screen <?php echo $show_welcome ? 'active' : ''; ?>" id="screen-welcome">
       <div class="welcome-icon-wrap">
-        <div class="welcome-badge">📚</div>
+        <div class="welcome-badge">
+          <img src="file.svg" alt="Logo">
+        </div>
       </div>
       <div class="r-eyebrow">✦ Registration Successful</div>
       <h2 class="r-title">Welcome, <span class="welcome-name-gold"><?php echo $registered_name; ?>!</span></h2>
-      <p class="r-sub">Your E-Library account is ready. Here's what awaits you:</p>
+      <p class="r-sub">Your account is ready. Here's what awaits you:</p>
 
       <ul class="welcome-list">
         <li>
@@ -311,11 +344,11 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
 </div>
 
 <script>
-/* ── Original JS (unchanged) ── */
+/* ── Original JS ── */
 function toggleP(){var i=document.getElementById('fpass');var ic=document.getElementById('eyeIco');i.type=i.type==='password'?'text':'password';ic.classList.toggle('fa-eye');ic.classList.toggle('fa-eye-slash');}
 function checkStr(v){var w=document.getElementById('strWrap');var l=document.getElementById('strLbl');var bs=[document.getElementById('sb1'),document.getElementById('sb2'),document.getElementById('sb3'),document.getElementById('sb4')];bs.forEach(function(b){b.className='sb';});if(!v){w.classList.remove('show');return;}w.classList.add('show');var sc=0;if(v.length>=6)sc++;if(v.length>=10)sc++;if(/[A-Z]/.test(v)&&/[0-9]/.test(v))sc++;if(/[^A-Za-z0-9]/.test(v))sc++;var lvl=[{c:'w',t:'Weak — keep going'},{c:'f',t:'Fair — getting better'},{c:'g',t:'Good — almost there'},{c:'s',t:'Strong — great!'}];for(var i=0;i<sc;i++)bs[i].classList.add(lvl[sc-1].c);l.textContent=lvl[sc-1].t;}
 
-/* ── New: Screen switcher ── */
+/* ── Screen switcher ── */
 function goToScreen(id){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   var el = document.getElementById(id);
@@ -326,6 +359,33 @@ function showRegister(){ goToScreen('screen-register'); }
 
 /* ── Login panel password toggle ── */
 function toggleLP(){var i=document.getElementById('lpass');var ic=document.getElementById('lEyeIco');i.type=i.type==='password'?'text':'password';ic.classList.toggle('fa-eye');ic.classList.toggle('fa-eye-slash');}
+</script>
+
+<script>
+  /* ── Phone Validation ── */
+  const phoneInput = document.getElementById('fph');
+  const checkMark  = document.getElementById('ph-check');
+  const phoneError = document.querySelector('.ph-error');
+
+  phoneInput.addEventListener('input', function () {
+    const val = this.value;
+    const pkPattern = /^03[0-9]{9}$/;
+
+    if (val.length === 0) {
+      checkMark.style.color    = '';
+      checkMark.style.display  = 'none';
+      phoneError.style.display = 'none';
+    } else if (pkPattern.test(val)) {
+      checkMark.style.color    = 'green';
+      checkMark.style.display  = 'inline';
+      phoneError.style.display = 'none';
+    } else {
+      checkMark.style.color    = 'red';
+      checkMark.style.display  = 'inline';
+      phoneError.style.display = 'inline';
+      phoneError.textContent   = '03XXXXXXXXX format mein likhein';
+    }
+  });
 </script>
 </body>
 </html>
