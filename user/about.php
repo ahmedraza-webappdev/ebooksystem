@@ -8,6 +8,7 @@ include("../config/db.php");
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>About Us | Book-Astra</title>
+<link rel="icon" type="image/x-icon" href="file.svg">
 <style>
 .about-hero{background:#141920;border-bottom:1px solid rgba(255,255,255,0.07);padding:72px 30px;text-align:center;position:relative;overflow:hidden;}
 .about-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 80% at 50% 0%,rgba(201,168,76,0.07) 0%,transparent 70%);pointer-events:none;}

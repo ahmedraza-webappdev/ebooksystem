@@ -10,7 +10,7 @@ $row = mysqli_fetch_assoc($result);
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?php echo htmlspecialchars($row['title']); ?> | E-Library</title>
+<title><?php echo htmlspecialchars($row['title']); ?> | Book-Astra</title>
 <style>
 .detail-page{max-width:1000px;margin:0 auto;padding:48px 30px;}
 .back-link{display:inline-flex;align-items:center;gap:8px;color:rgba(255,255,255,0.38);text-decoration:none;font-size:0.78rem;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);padding:8px 16px;border-radius:5px;transition:all 0.2s;margin-bottom:32px;}

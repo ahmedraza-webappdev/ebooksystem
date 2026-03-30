@@ -7,7 +7,7 @@ if(!isset($_SESSION['user'])){ header("Location: login.php"); }
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard | E-Library</title>
+<title>Dashboard | Book-Astra</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -37,7 +37,7 @@ body{background:#0d0d0d;color:#f0ece4;font-family:'DM Sans',sans-serif;min-heigh
 </head>
 <body>
 <div class="top-bar">
-  <div class="brand">📚 <span>E-Library</span></div>
+  <div class="brand"> <span>Book-Astra</span></div>
   <div class="top-right">
     <span class="welcome">Welcome, <?php echo htmlspecialchars($_SESSION['user']); ?></span>
     <a href="logout.php" class="btn-logout"><i class="fa-solid fa-right-from-bracket" style="margin-right:5px;"></i>Logout</a>

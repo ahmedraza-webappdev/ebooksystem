@@ -108,7 +108,7 @@ body{
 <div class="right-panel">
   <div class="form-wrap">
     <div class="r-topbar">
-      <a href="index.php" class="r-brand">📚 <span>E-Library</span></a>
+      <a href="index.php" class="r-brand"><img src="file.svg" alt=""> <span>Book-Astra</span></a>
       <a href="register.php" class="r-register">Register</a>
     </div>
 

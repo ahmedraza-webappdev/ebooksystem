@@ -29,7 +29,7 @@ $result = mysqli_query($conn, $sql);
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Library | E-Library</title>
+<title>My Library | Book-Astra</title>
 <style>
 .page-hero{background:#141920;border-bottom:1px solid rgba(255,255,255,0.07);padding:52px 30px;text-align:center;}
 .page-hero h1{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;color:#fff;margin-bottom:8px;}

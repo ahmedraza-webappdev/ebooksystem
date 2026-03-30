@@ -218,7 +218,7 @@ include("navbar.php");
         </div>
 
         <div class="upload-wrap" id="screenshotWrap" style="<?php echo ($order_type=='Hard Copy') ? 'display:none;' : ''; ?>">
-          <span class="upload-label-txt" style="margin-top:4px;"><i class="fa-solid fa-phone" style="margin-right:5px;color:var(--gold);"></i>Kis Number Pe Bheja?</span>
+          <span class="upload-label-txt" style="margin-top:4px;"><i class="fa-solid fa-phone" style="margin-right:5px;color:var(--gold);"></i>To which number did you send it</span>
           <div class="sent-grid">
             <div>
               <input type="radio" class="pay-option" name="sent_to_number" id="sn1" value="0317-0010116" checked>
@@ -236,7 +236,7 @@ include("navbar.php");
             </div>
           </div>
 
-          <span class="upload-label-txt" style="margin-top:14px;"><i class="fa-solid fa-image" style="margin-right:5px;color:var(--gold);"></i>Payment Screenshot Upload Karein</span>
+          <span class="upload-label-txt" style="margin-top:14px;"><i class="fa-solid fa-image" style="margin-right:5px;color:var(--gold);"></i>Please upload the payment screenshot.</span>
           <div class="upload-box" id="uploadBox">
             <input type="file" name="payment_screenshot" id="ssFile" accept="image/*">
             <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
