@@ -8,19 +8,41 @@ $registered_email = "";
 $show_welcome = false;
 
 if(isset($_POST['register'])){
+    // Data sanitize karna
     $name     = mysqli_real_escape_string($conn, $_POST['name']);
     $email    = mysqli_real_escape_string($conn, $_POST['email']);
-    $password = md5($_POST['password']);
     $phone    = mysqli_real_escape_string($conn, $_POST['phone']);
+    $password = $_POST['password']; // Pehle raw password lein validation ke liye
     $address  = isset($_POST['address']) ? mysqli_real_escape_string($conn, $_POST['address']) : '';
 
-    $check = mysqli_query($conn, "SELECT id FROM users WHERE email='$email'");
-    if(mysqli_num_rows($check) > 0){
-        $msg = "This email is already registered. Please login.";
-    } else {
-        $sql = "INSERT INTO users(name, email, password, phone, address, created_at) VALUES('$name','$email','$password','$phone','$address',NOW())";
-        if(!mysqli_query($conn, $sql)){
-            $sql = "INSERT INTO users(name, email, password, phone) VALUES('$name','$email','$password','$phone')";
+    // --- SERVER SIDE VALIDATIONS ---
+    
+    // 1. Name Check (Sirf Letters aur Spaces)
+    if (!preg_match("/^[a-zA-Z\s]*$/", $name) || strlen($name) < 3) {
+        $msg = "Invalid Name: Sirf alphabets likhein aur kam se kam 3 characters hon.";
+    } 
+    // 2. Phone Check (Pakistan Format)
+    elseif (!preg_match("/^03[0-9]{9}$/", $phone)) {
+        $msg = "Invalid Phone: 03XXXXXXXXX format zaroori hai.";
+    }
+    // 3. Password Check (Length)
+    elseif (strlen($password) < 6) {
+        $msg = "Password kam se kam 6 characters ka hona chahiye.";
+    }
+    else {
+        // Agar validations pass ho jayein, to check karein email pehle se to nahi hai
+        $check = mysqli_query($conn, "SELECT id FROM users WHERE email='$email'");
+        
+        if(mysqli_num_rows($check) > 0){
+            $msg = "This email is already registered. Please login.";
+        } else {
+            // SECURITY: MD5 ki jagah password_hash use karein (Behtar Practice)
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+            // Database mein data insert karna
+            $sql = "INSERT INTO users(name, email, password, phone, address, created_at) 
+                    VALUES('$name', '$email', '$hashed_password', '$phone', '$address', NOW())";
+
             if(mysqli_query($conn, $sql)){
                 $show_welcome = true;
                 $registered_name  = htmlspecialchars($name);
@@ -28,10 +50,6 @@ if(isset($_POST['register'])){
             } else {
                 $msg = "Registration failed: " . mysqli_error($conn);
             }
-        } else {
-            $show_welcome = true;
-            $registered_name  = htmlspecialchars($name);
-            $registered_email = htmlspecialchars($email);
         }
     }
 }
@@ -320,6 +338,15 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
 
       <form method="POST" action="login.php">
         <div class="fg">
+    <i class="fic fa-regular fa-user"></i>
+    <input type="text" name="name" id="fn" class="fi" placeholder=" " required>
+    <label class="fl">Full Name</label>
+    <i class="fa-solid fa-check check-mark" id="name-tick"></i>
+    <div id="name-err" style="color: #e05c5c; font-size: 11px; margin-top: 5px; display: none; padding-left: 5px;">
+        Name mein sirf alphabets allow hain.
+    </div>
+</div>
+        <div class="fg">
           <i class="fic fa-regular fa-envelope"></i>
           <input type="email" name="email" id="le" class="fi" placeholder="Email Address" required autocomplete="email"
             value="<?php echo $registered_email; ?>">
@@ -344,11 +371,13 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
 </div>
 
 <script>
-/* ── Original JS ── */
-function toggleP(){var i=document.getElementById('fpass');var ic=document.getElementById('eyeIco');i.type=i.type==='password'?'text':'password';ic.classList.toggle('fa-eye');ic.classList.toggle('fa-eye-slash');}
-function checkStr(v){var w=document.getElementById('strWrap');var l=document.getElementById('strLbl');var bs=[document.getElementById('sb1'),document.getElementById('sb2'),document.getElementById('sb3'),document.getElementById('sb4')];bs.forEach(function(b){b.className='sb';});if(!v){w.classList.remove('show');return;}w.classList.add('show');var sc=0;if(v.length>=6)sc++;if(v.length>=10)sc++;if(/[A-Z]/.test(v)&&/[0-9]/.test(v))sc++;if(/[^A-Za-z0-9]/.test(v))sc++;var lvl=[{c:'w',t:'Weak — keep going'},{c:'f',t:'Fair — getting better'},{c:'g',t:'Good — almost there'},{c:'s',t:'Strong — great!'}];for(var i=0;i<sc;i++)bs[i].classList.add(lvl[sc-1].c);l.textContent=lvl[sc-1].t;}
+/* ── Variables for Validation Tracking ── */
+let isNameValid = false;
+let isPhoneValid = false;
 
-/* ── Screen switcher ── */
+/* ── Original JS & Screen Switchers ── */
+function toggleP(){var i=document.getElementById('fpass');var ic=document.getElementById('eyeIco');i.type=i.type==='password'?'text':'password';ic.classList.toggle('fa-eye');ic.classList.toggle('fa-eye-slash');}
+
 function goToScreen(id){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   var el = document.getElementById(id);
@@ -356,36 +385,77 @@ function goToScreen(id){
 }
 function showLogin()   { goToScreen('screen-login'); }
 function showRegister(){ goToScreen('screen-register'); }
-
-/* ── Login panel password toggle ── */
 function toggleLP(){var i=document.getElementById('lpass');var ic=document.getElementById('lEyeIco');i.type=i.type==='password'?'text':'password';ic.classList.toggle('fa-eye');ic.classList.toggle('fa-eye-slash');}
-</script>
 
-<script>
-  /* ── Phone Validation ── */
-  const phoneInput = document.getElementById('fph');
-  const checkMark  = document.getElementById('ph-check');
-  const phoneError = document.querySelector('.ph-error');
+/* ── Name Validation Logic ── */
+document.getElementById('fn').addEventListener('input', function() {
+    const nameInp = this;
+    const nameErr = document.getElementById('name-err');
+    const nameTick = document.getElementById('name-tick');
+    const nameRegex = /^[a-zA-Z\s]*$/;
 
-  phoneInput.addEventListener('input', function () {
+    if (nameInp.value.trim() === "") {
+        isNameValid = false;
+        nameErr.style.display = "none";
+        nameTick.style.opacity = "0";
+        nameInp.style.borderColor = "rgba(255,255,255,0.08)";
+    } else if (!nameRegex.test(nameInp.value) || nameInp.value.length < 3) {
+        isNameValid = false;
+        nameErr.style.display = "block";
+        nameTick.style.opacity = "0";
+        nameInp.style.borderColor = "#e05c5c";
+    } else {
+        isNameValid = true;
+        nameErr.style.display = "none";
+        nameTick.style.opacity = "1";
+        nameInp.style.borderColor = "#4a7c59";
+    }
+});
+
+/* ── Phone Validation Logic ── */
+const phoneInput = document.getElementById('fph');
+const checkMark   = document.getElementById('ph-check');
+const phoneError = document.querySelector('.ph-error');
+
+phoneInput.addEventListener('input', function () {
     const val = this.value;
     const pkPattern = /^03[0-9]{9}$/;
 
     if (val.length === 0) {
-      checkMark.style.color    = '';
-      checkMark.style.display  = 'none';
-      phoneError.style.display = 'none';
+        isPhoneValid = false;
+        checkMark.style.display = 'none';
+        phoneError.style.display = 'none';
     } else if (pkPattern.test(val)) {
-      checkMark.style.color    = 'green';
-      checkMark.style.display  = 'inline';
-      phoneError.style.display = 'none';
+        isPhoneValid = true;
+        checkMark.style.color = 'green';
+        checkMark.style.display = 'inline';
+        phoneError.style.display = 'none';
     } else {
-      checkMark.style.color    = 'red';
-      checkMark.style.display  = 'inline';
-      phoneError.style.display = 'inline';
-      phoneError.textContent   = '03XXXXXXXXX format mein likhein';
+        isPhoneValid = false;
+        checkMark.style.color = 'red';
+        checkMark.style.display = 'inline';
+        phoneError.style.display = 'inline';
+        phoneError.textContent = '03XXXXXXXXX format mein likhein';
     }
-  });
+});
+
+/* ── FINAL GATEKEEPER: Form Submit hone se rokna ── */
+// Yaad rahe aapke form ki ID 'regForm' honi chahiye
+const myForm = document.getElementById('regForm');
+if(myForm){
+    myForm.onsubmit = function(e) {
+        if (!isNameValid) {
+            e.preventDefault();
+            alert("Please enter a valid name (letters only, min 3 chars)!");
+            return false;
+        }
+        if (!isPhoneValid) {
+            e.preventDefault();
+            alert("Please enter a valid phone number!");
+            return false;
+        }
+    };
+}
 </script>
 </body>
 </html>
