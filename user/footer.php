@@ -18,6 +18,17 @@
 .e-footer .socials a{width:32px;height:32px;border-radius:5px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.28);font-size:0.7rem;text-decoration:none;transition:all 0.2s;}
 .e-footer .socials a:hover{border-color:#c9a84c;color:#c9a84c;}
 @media(max-width:700px){.e-footer .fg{grid-template-columns:1fr;gap:30px;}.e-footer .fbot{flex-direction:column;text-align:center;}}
+
+/* Auth Modal Styles globally */
+.auth-modal { position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; }
+.auth-modal-content { background: #141920; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 40px; text-align: center; max-width: 400px; width: 90%; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: modalIn 0.3s ease-out; font-family: 'DM Sans', sans-serif;}
+@keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.close-auth { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: rgba(255,255,255,0.5); cursor: pointer; transition: 0.2s; }
+.close-auth:hover { color: #fff; transform: scale(1.1); }
+.btn-primary-gold-modal { background: #c9a84c; color: #0d0d0d; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 12px 26px; border-radius: 5px; text-decoration: none; transition: background 0.2s; display: inline-block; }
+.btn-primary-gold-modal:hover { background: #dfc17b; }
+.btn-outline-modal { background: transparent; border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.55); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 12px 26px; border-radius: 5px; text-decoration: none; transition: all 0.2s; display: inline-block; }
+.btn-outline-modal:hover { border-color: rgba(255,255,255,0.3); color: #fff; }
 </style>
 <footer class="e-footer">
   <div class="fi">
@@ -30,6 +41,7 @@
         <div class="ct">Quick Links</div>
         <ul>
           <li><a href="index.php">Home</a></li>
+          <li><a href="category.php">Categories</a></li>
           <li><a href="index.php?filter=free">Free Books</a></li>
           <li><a href="competition.php">Competitions</a></li>
           <li><a href="winners.php">Winners</a></li>
@@ -53,3 +65,33 @@
     </div>
   </div>
 </footer>
+
+<!-- Auth Modal (Included Globally via Footer) -->
+<div id="authModal" class="auth-modal" style="display:none;">
+   <div class="auth-modal-content">
+      <span class="close-auth" onclick="document.getElementById('authModal').style.display='none'">&times;</span>
+      <div style="font-size: 3rem; color: #c9a84c; margin-bottom: 10px;"><i class="fa-solid fa-lock"></i></div>
+      <h3 style="font-family:'Cormorant Garamond',serif; font-size: 1.8rem; margin:0 0 10px 0; color:#fff;">Authentication Required</h3>
+      <p style="color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-bottom: 25px;">You need to create an account or sign in to <strong id="authActionText" style="color: #fff;">access</strong> this book.</p>
+      <div style="display:flex; gap:10px; justify-content:center;">
+          <a href="login.php" class="btn-outline-modal">Login</a>
+          <a href="register.php" class="btn-primary-gold-modal">Sign Up</a>
+      </div>
+   </div>
+</div>
+
+<script>
+function showAuthModal(e, actionType) {
+    if(e) e.preventDefault();
+    var actionTextEl = document.getElementById('authActionText');
+    if(actionTextEl) actionTextEl.innerText = actionType.toLowerCase();
+    var modalEl = document.getElementById('authModal');
+    if(modalEl) modalEl.style.display = 'flex';
+}
+window.addEventListener('click', function(event) {
+    var modal = document.getElementById('authModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+});
+</script>

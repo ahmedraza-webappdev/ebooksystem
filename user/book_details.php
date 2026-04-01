@@ -48,12 +48,17 @@ $row = mysqli_fetch_assoc($result);
       <div class="author">By <strong style="color:rgba(255,255,255,0.65);"><?php echo htmlspecialchars($row['author']); ?></strong></div>
       <p class="desc"><?php echo nl2br(htmlspecialchars($row['description'])); ?></p>
       <div class="price-row">
-        <?php $isFree = ($row['price'] <= 0); ?>
+        <?php 
+        $isFree = ($row['price'] <= 0); 
+        $isLoggedIn = isset($_SESSION['user_id']); 
+        ?>
         <div class="price <?php echo $isFree ? 'free-price' : ''; ?>">
           <?php echo $isFree ? 'Free' : 'Rs. '.number_format($row['price'], 0); ?>
         </div>
       </div>
-      <a href="<?php echo $isFree ? 'view_book.php?id='.$row['id'] : 'order.php?book_id='.$row['id']; ?>" class="btn-buy <?php echo $isFree ? 'free-btn' : ''; ?>">
+      <a href="<?php echo $isLoggedIn ? ($isFree ? 'view_book.php?id='.$row['id'] : 'order.php?book_id='.$row['id']) : 'javascript:void(0)'; ?>" 
+         class="btn-buy <?php echo $isFree ? 'free-btn' : ''; ?>"
+         <?php if(!$isLoggedIn) echo 'onclick="showAuthModal(event, \''.($isFree ? 'Read Free' : 'Buy Now').'\')"'; ?>>
         <i class="fa-solid <?php echo $isFree ? 'fa-book-open' : 'fa-cart-shopping'; ?>"></i>
         <?php echo $isFree ? 'Read Free' : 'Buy Now'; ?>
       </a>

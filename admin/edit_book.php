@@ -16,16 +16,22 @@ if(isset($_POST['update'])){
     $description = mysqli_real_escape_string($conn,$_POST['description']);
     $weight      = mysqli_real_escape_string($conn,$_POST['weight']);
     $is_free     = isset($_POST['is_free']) ? 1 : 0;
+    $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $price       = ($is_free==1) ? 0 : floatval($_POST['price']);
 
     $pdf   = $_FILES['pdf_file']['name'];
     $image = $_FILES['book_image']['name'];
-    $pdf_name   = $pdf   ? time()."_".$pdf   : $row['pdf_file'];
-    $image_name = $image ? time()."_".$image : $row['book_image'];
+    
+    // Sanitize file names to prevent SQL syntax errors
+    $raw_pdf = $pdf ? preg_replace('/[^a-zA-Z0-9.\-_]/', '_', basename($pdf)) : '';
+    $raw_img = $image ? preg_replace('/[^a-zA-Z0-9.\-_]/', '_', basename($image)) : '';
+    
+    $pdf_name   = $pdf   ? time()."_".$raw_pdf   : $row['pdf_file'];
+    $image_name = $image ? time()."_".$raw_img : $row['book_image'];
     if($pdf)   move_uploaded_file($_FILES['pdf_file']['tmp_name'],"../uploads/pdf/".$pdf_name);
     if($image) move_uploaded_file($_FILES['book_image']['tmp_name'],"../uploads/covers/".$image_name);
 
-    $sql="UPDATE books SET title='$title',author='$author',category='$category',description='$description',price='$price',pdf_file='$pdf_name',book_image='$image_name',weight='$weight',is_free='$is_free' WHERE id=$id";
+    $sql="UPDATE books SET title='$title',author='$author',category='$category',description='$description',price='$price',pdf_file='$pdf_name',book_image='$image_name',weight='$weight',is_free='$is_free',is_featured='$is_featured' WHERE id=$id";
     if(mysqli_query($conn,$sql)){
         $success_msg = true;
         $result = mysqli_query($conn,"SELECT * FROM books WHERE id='$id'");
@@ -53,15 +59,29 @@ include("admin_header.php");
 
         <form method="POST" enctype="multipart/form-data">
             <!-- Free Toggle -->
-            <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
-                <div>
-                    <div style="font-weight:800;color:#3730a3;font-size:0.88rem;">Price Status</div>
-                    <div style="font-size:0.72rem;color:#6366f1;margin-top:2px;">Switch between Free and Paid</div>
+            <!-- Toggles -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
+                    <div>
+                        <div style="font-weight:800;color:#3730a3;font-size:0.88rem;">Price Status</div>
+                        <div style="font-size:0.72rem;color:#6366f1;margin-top:2px;">Switch between Free and Paid</div>
+                    </div>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" name="is_free" value="1" id="freeCheck" onchange="togglePrice()" <?php echo ($row['is_free']==1)?'checked':''; ?> style="width:18px;height:18px;accent-color:#6366f1;">
+                        <span style="font-size:0.8rem;font-weight:700;color:#4f46e5;">Free</span>
+                    </label>
                 </div>
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-                    <input type="checkbox" name="is_free" value="1" id="freeCheck" onchange="togglePrice()" <?php echo ($row['is_free']==1)?'checked':''; ?> style="width:18px;height:18px;accent-color:#6366f1;">
-                    <span style="font-size:0.8rem;font-weight:700;color:#4f46e5;">Free</span>
-                </label>
+                
+                <div style="background:#fdf4ff;border:1px solid #fbcfe8;border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;">
+                    <div>
+                        <div style="font-weight:800;color:#86198f;font-size:0.88rem;">Feature on Homepage</div>
+                        <div style="font-size:0.72rem;color:#d946ef;margin-top:2px;">Display in the main showcase suite</div>
+                    </div>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" name="is_featured" value="1" <?php echo ($row['is_featured']==1)?'checked':''; ?> style="width:18px;height:18px;accent-color:#d946ef;">
+                        <span style="font-size:0.8rem;font-weight:700;color:#c026d3;">Featured</span>
+                    </label>
+                </div>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -89,12 +109,12 @@ include("admin_header.php");
                     <label class="form-label">Description</label>
                     <textarea name="description" rows="4" class="form-input"><?php echo htmlspecialchars($row['description']); ?></textarea>
                 </div>
-                <div style="border:2px dashed #e2e8f0;border-radius:14px;padding:16px;position:relative;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#e2e8f0'">
+                <div style="border:2px dashed #e2e8f0;border-radius:14px;padding:16px;position:relative;overflow:hidden;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#e2e8f0'">
                     <input type="file" name="book_image" id="imgInput" style="position:absolute;inset:0;opacity:0;cursor:pointer;" onchange="previewImage(this)">
                     <div style="font-size:0.7rem;font-weight:800;color:#94a3b8;text-transform:uppercase;margin-bottom:4px;">Update Cover</div>
                     <div style="font-size:0.78rem;color:#64748b;">Click to change image</div>
                 </div>
-                <div style="border:2px dashed #e2e8f0;border-radius:14px;padding:16px;position:relative;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#e2e8f0'">
+                <div style="border:2px dashed #e2e8f0;border-radius:14px;padding:16px;position:relative;overflow:hidden;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#e2e8f0'">
                     <input type="file" name="pdf_file" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
                     <div style="font-size:0.7rem;font-weight:800;color:#94a3b8;text-transform:uppercase;margin-bottom:4px;">Update PDF</div>
                     <div style="font-size:0.78rem;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?php echo $row['pdf_file']; ?></div>

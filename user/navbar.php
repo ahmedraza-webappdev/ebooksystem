@@ -10,6 +10,7 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
     --gold: #c9a84c; --gold-light: #dfc17b;
     --bg-dark: #0d0d0d; --surface: #141920; --surface-2: #1c2333;
     --border: rgba(255,255,255,0.08); --muted: rgba(255,255,255,0.5);
+    --sage: #2b7042;
 }
 body { margin: 0; font-family: 'DM Sans', sans-serif; background: var(--bg-dark); color: #fff; }
 .e-nav { background: rgba(13,13,13,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; height: 70px; }
@@ -28,6 +29,11 @@ body { margin: 0; font-family: 'DM Sans', sans-serif; background: var(--bg-dark)
 .dropdown-menu.active { display: block; }
 .dropdown-menu a { display: block; padding: 12px 15px; color: rgba(255,255,255,0.8); text-decoration: none; font-size: 0.85rem; border-bottom: 1px solid var(--border); }
 .dropdown-menu a:hover { background: rgba(255,255,255,0.05); color: var(--gold); }
+.nav-item-dropdown { position: relative; display: flex; align-items: center; height: 100%; cursor: pointer; }
+.nav-item-dropdown > a { display: flex; align-items: center; gap: 5px; }
+.nav-item-dropdown .dropdown-menu { top: 70px; left: -10px; right: auto; padding: 8px 0; border-radius: 6px; }
+.nav-item-dropdown .dropdown-menu a { display: block; padding: 10px 20px; color: rgba(255,255,255,0.8); text-decoration: none; font-size: 0.8rem; border-bottom: none; text-transform: capitalize; letter-spacing: normal; font-weight: 500;}
+.nav-item-dropdown .dropdown-menu a:hover { background: rgba(255,255,255,0.05); color: var(--gold); }
 @media(max-width: 900px) { .nav-links { display: none; } }
 </style>
 
@@ -38,6 +44,26 @@ body { margin: 0; font-family: 'DM Sans', sans-serif; background: var(--bg-dark)
     </a>
     <div class="nav-links">
       <a href="index.php">Home</a>
+      
+      <div class="nav-item-dropdown">
+        <a id="catDropdownBtn" style="cursor: pointer;">Categories <i class="fa-solid fa-chevron-down" style="font-size:0.55rem;opacity:0.7;"></i></a>
+        <div class="dropdown-menu" id="catDropdownMenu">
+          <?php
+          if (!isset($conn)) { @include_once dirname(__DIR__) . '/config/db.php'; }
+          if (isset($conn)) {
+              $cat_q = mysqli_query($conn, "SELECT DISTINCT category FROM books WHERE category IS NOT NULL AND category != '' ORDER BY category ASC");
+              if($cat_q && mysqli_num_rows($cat_q) > 0) {
+                  while($c_row = mysqli_fetch_assoc($cat_q)) {
+                      echo '<a href="category.php?name='.urlencode($c_row['category']).'">'.htmlspecialchars($c_row['category']).'</a>';
+                  }
+              } else {
+                  echo '<a href="#">No categories</a>';
+              }
+          }
+          ?>
+        </div>
+      </div>
+
       <a href="index.php?filter=free">Free Books</a>
       <a href="competition.php">Competitions</a>
       <a href="winners.php">Winners</a>
@@ -69,9 +95,29 @@ body { margin: 0; font-family: 'DM Sans', sans-serif; background: var(--bg-dark)
 document.addEventListener('DOMContentLoaded', function() {
     const btn = document.getElementById('myDropdownBtn');
     const menu = document.getElementById('myDropdownMenu');
+    const catBtn = document.getElementById('catDropdownBtn');
+    const catMenu = document.getElementById('catDropdownMenu');
+
     if(btn && menu) {
-        btn.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('active'); };
-        document.onclick = () => menu.classList.remove('active');
+        btn.onclick = (e) => { 
+            e.stopPropagation(); 
+            menu.classList.toggle('active'); 
+            if(catMenu) catMenu.classList.remove('active');
+        };
     }
+
+    if(catBtn && catMenu) {
+        catBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            catMenu.classList.toggle('active');
+            if(menu) menu.classList.remove('active');
+        };
+    }
+
+    document.onclick = () => {
+        if(menu) menu.classList.remove('active');
+        if(catMenu) catMenu.classList.remove('active');
+    };
 });
 </script>

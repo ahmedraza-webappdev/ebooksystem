@@ -188,7 +188,11 @@ section.sec{max-width:1200px;margin:0 auto;padding:64px 30px;}
   <div class="books-grid">
     <?php
     $query = "SELECT * FROM books WHERE 1=1";
-    if ($search) { $query .= " AND (title LIKE '%$search%' OR author LIKE '%$search%')"; }
+    if ($search) { 
+        $query .= " AND (title LIKE '%$search%' OR author LIKE '%$search%')"; 
+    } else {
+        $query .= " AND is_featured = 1";
+    }
     if ($filter == 'free') { $query .= " AND price <= 0"; } 
     elseif ($filter == 'paid') { $query .= " AND price > 0"; }
     $query .= ($filter == 'new') ? " ORDER BY id DESC LIMIT 10" : " ORDER BY id DESC";
@@ -207,7 +211,10 @@ section.sec{max-width:1200px;margin:0 auto;padding:64px 30px;}
         <div class="book-author">By <?php echo htmlspecialchars($row['author']); ?></div>
         <div class="book-footer">
           <div class="book-price <?php echo $isFree?'free':''; ?>"><?php echo $isFree ? 'Free' : 'Rs. '.$row['price']; ?></div>
-          <a href="<?php echo $isFree ? 'view_book.php?id='.$row['id'] : 'order.php?book_id='.$row['id']; ?>" class="btn-book <?php echo $isFree?'read':''; ?>">
+          <?php $isLoggedIn = isset($_SESSION['user_id']); ?>
+          <a href="<?php echo $isLoggedIn ? ($isFree ? 'view_book.php?id='.$row['id'] : 'order.php?book_id='.$row['id']) : 'javascript:void(0)'; ?>" 
+             class="btn-book <?php echo $isFree?'read':''; ?>"
+             <?php if(!$isLoggedIn) echo 'onclick="showAuthModal(event, \''.($isFree ? 'Read' : 'Buy').'\')"'; ?>>
             <?php echo $isFree ? 'Read' : 'Buy'; ?>
           </a>
         </div>
@@ -227,7 +234,7 @@ section.sec{max-width:1200px;margin:0 auto;padding:64px 30px;}
 <section class="sec" style="padding-top:0;">
   <div class="why-box">
     <div>
-      <h2>Why choose<br>E-Library?</h2>
+      <h2>Why choose<br>Book-Astra</h2>
       <div class="why-item">
         <div class="why-icon"><i class="fa-solid fa-bolt"></i></div>
         <div class="why-text"><h6>Instant Access</h6><p>Get your PDF right after purchase — no waiting, no delays.</p></div>

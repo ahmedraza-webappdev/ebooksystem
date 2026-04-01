@@ -9,7 +9,7 @@ $error_type = ""; // 'email' ya 'password' ki nishandehi ke liye
 
 if (isset($_POST['login'])) {
     $email    = mysqli_real_escape_string($conn, $_POST['email']);
-    $password = md5($_POST['password']);
+    $raw_password = $_POST['password'];
     
     // 1. Pehle check karein ke kya email database mein mojud hai
     $check_email = mysqli_query($conn, "SELECT * FROM users WHERE email='$email'");
@@ -20,7 +20,9 @@ if (isset($_POST['login'])) {
     } else {
         // 2. Agar email mil gayi, toh password check karein
         $user = mysqli_fetch_assoc($check_email);
-        if ($user['password'] !== $password) {
+        
+        // Naya secure hash check OR purana md5 fallback
+        if (!password_verify($raw_password, $user['password']) && md5($raw_password) !== $user['password']) {
             $msg = "Incorrect password. Please try again!";
             $error_type = "password";
         } else {

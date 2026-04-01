@@ -13,18 +13,22 @@ if(isset($_POST['add_book'])){
     $description = mysqli_real_escape_string($conn, $_POST['description']);
     $weight      = mysqli_real_escape_string($conn, $_POST['weight']);
     $is_free     = isset($_POST['is_free']) ? 1 : 0;
+    $is_featured = isset($_POST['is_featured']) ? 1 : 0;
     $price       = ($is_free==1) ? 0 : floatval($_POST['price']);
 
     if(!is_dir("../uploads/pdf")) mkdir("../uploads/pdf", 0777, true);
     if(!is_dir("../uploads/covers")) mkdir("../uploads/covers", 0777, true);
 
-    $pdf_name   = time()."_".$_FILES['pdf_file']['name'];
-    $image_name = time()."_".$_FILES['book_image']['name'];
+    // Sanitize file names to prevent SQL syntax errors & broken browser URLs
+    $raw_pdf = preg_replace('/[^a-zA-Z0-9.\-_]/', '_', basename($_FILES['pdf_file']['name']));
+    $raw_img = preg_replace('/[^a-zA-Z0-9.\-_]/', '_', basename($_FILES['book_image']['name']));
+    $pdf_name   = time()."_".$raw_pdf;
+    $image_name = time()."_".$raw_img;
 
     if(move_uploaded_file($_FILES['pdf_file']['tmp_name'],"../uploads/pdf/".$pdf_name) &&
        move_uploaded_file($_FILES['book_image']['tmp_name'],"../uploads/covers/".$image_name)){
-        $sql = "INSERT INTO books (title,author,category,description,price,pdf_file,book_image,weight,is_free,created_at)
-                VALUES ('$title','$author','$category','$description','$price','$pdf_name','$image_name','$weight','$is_free',NOW())";
+        $sql = "INSERT INTO books (title,author,category,description,price,pdf_file,book_image,weight,is_free,is_featured,created_at)
+                VALUES ('$title','$author','$category','$description','$price','$pdf_name','$image_name','$weight','$is_free','$is_featured',NOW())";
         if(mysqli_query($conn,$sql)) $success_msg = true;
         else $error_msg = "Database error: ".mysqli_error($conn);
     } else {
@@ -65,17 +69,28 @@ include("admin_header.php");
         <h3 style="font-size:1.1rem; font-weight:800; color:var(--gold); margin-bottom:22px;"><i class="fa-solid fa-cloud-arrow-up" style="margin-right:10px;"></i>Book Information</h3>
 
         <form method="POST" enctype="multipart/form-data">
-            <div class="toggle-card">
-                <div>
-                    <div style="font-weight:800; color:#e2e8f0; font-size:0.88rem;">Set as Free Content</div>
-                    <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">Users can download this without payment</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="toggle-card" style="margin-bottom:0;">
+                    <div>
+                        <div style="font-weight:800; color:#e2e8f0; font-size:0.88rem;">Set as Free Content</div>
+                        <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">User downloads without payment</div>
+                    </div>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" name="is_free" value="1" id="freeCheck" onchange="togglePrice()" style="width:20px; height:20px; accent-color:var(--gold);">
+                    </label>
                 </div>
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                    <input type="checkbox" name="is_free" value="1" id="freeCheck" onchange="togglePrice()" style="width:20px; height:20px; accent-color:var(--gold);">
-                </label>
+                <div class="toggle-card" style="margin-bottom:0; background:rgba(99,102,241,0.05); border-color:rgba(99,102,241,0.2);">
+                    <div>
+                        <div style="font-weight:800; color:#e2e8f0; font-size:0.88rem;">Feature on Homepage</div>
+                        <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">Display in the main showcase section</div>
+                    </div>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" name="is_featured" value="1" style="width:20px; height:20px; accent-color:#6366f1;">
+                    </label>
+                </div>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:22px;">
                 <div style="grid-column:span 2;">
                     <label class="form-label">Book Title *</label>
                     <input type="text" name="title" required class="form-input" placeholder="e.g. The Great Gatsby">

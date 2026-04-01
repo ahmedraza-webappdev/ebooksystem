@@ -274,7 +274,7 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
         </div>
         <div class="fg">
           <i class="fic fa-solid fa-lock"></i>
-          <input type="password" name="password" id="fpass" class="fi" placeholder="Password" required autocomplete="new-password" oninput="checkStr(this.value)">
+          <input type="password" name="password" id="fpass" class="fi" placeholder="Password" required autocomplete="new-password" oninput="typeof checkStr === 'function' && checkStr(this.value)">
           <label class="fl" for="fpass">Password</label>
           <button type="button" class="pwd-btn" onclick="toggleP()"><i class="fa-regular fa-eye" id="eyeIco"></i></button>
         </div>
@@ -337,14 +337,10 @@ body{background:var(--ink);color:#f0ece4;font-family:'DM Sans',sans-serif;displa
       <?php endif; ?>
 
       <form method="POST" action="login.php">
-        <div class="fg">
+<div class="fg">
     <i class="fic fa-regular fa-user"></i>
-    <input type="text" name="name" id="fn" class="fi" placeholder=" " required>
-    <label class="fl">Full Name</label>
-    <i class="fa-solid fa-check check-mark" id="name-tick"></i>
-    <div id="name-err" style="color: #e05c5c; font-size: 11px; margin-top: 5px; display: none; padding-left: 5px;">
-        Name mein sirf alphabets allow hain.
-    </div>
+    <input type="text" name="name" id="ln" class="fi" placeholder=" " required>
+    <label class="fl" for="ln">Full Name</label>
 </div>
         <div class="fg">
           <i class="fic fa-regular fa-envelope"></i>
@@ -387,32 +383,22 @@ function showLogin()   { goToScreen('screen-login'); }
 function showRegister(){ goToScreen('screen-register'); }
 function toggleLP(){var i=document.getElementById('lpass');var ic=document.getElementById('lEyeIco');i.type=i.type==='password'?'text':'password';ic.classList.toggle('fa-eye');ic.classList.toggle('fa-eye-slash');}
 
-/* ── Name Validation Logic ── */
+/* ── REAL-TIME VALIDATION TRACKERS REMOVED (due to autofill issues) ── */
+
+/* ── Name Validation UI Logic ── */
 document.getElementById('fn').addEventListener('input', function() {
     const nameInp = this;
-    const nameErr = document.getElementById('name-err');
-    const nameTick = document.getElementById('name-tick');
     const nameRegex = /^[a-zA-Z\s]*$/;
-
     if (nameInp.value.trim() === "") {
-        isNameValid = false;
-        nameErr.style.display = "none";
-        nameTick.style.opacity = "0";
         nameInp.style.borderColor = "rgba(255,255,255,0.08)";
     } else if (!nameRegex.test(nameInp.value) || nameInp.value.length < 3) {
-        isNameValid = false;
-        nameErr.style.display = "block";
-        nameTick.style.opacity = "0";
         nameInp.style.borderColor = "#e05c5c";
     } else {
-        isNameValid = true;
-        nameErr.style.display = "none";
-        nameTick.style.opacity = "1";
         nameInp.style.borderColor = "#4a7c59";
     }
 });
 
-/* ── Phone Validation Logic ── */
+/* ── Phone Validation UI Logic ── */
 const phoneInput = document.getElementById('fph');
 const checkMark   = document.getElementById('ph-check');
 const phoneError = document.querySelector('.ph-error');
@@ -420,18 +406,14 @@ const phoneError = document.querySelector('.ph-error');
 phoneInput.addEventListener('input', function () {
     const val = this.value;
     const pkPattern = /^03[0-9]{9}$/;
-
     if (val.length === 0) {
-        isPhoneValid = false;
         checkMark.style.display = 'none';
         phoneError.style.display = 'none';
     } else if (pkPattern.test(val)) {
-        isPhoneValid = true;
         checkMark.style.color = 'green';
         checkMark.style.display = 'inline';
         phoneError.style.display = 'none';
     } else {
-        isPhoneValid = false;
         checkMark.style.color = 'red';
         checkMark.style.display = 'inline';
         phoneError.style.display = 'inline';
@@ -439,21 +421,55 @@ phoneInput.addEventListener('input', function () {
     }
 });
 
-/* ── FINAL GATEKEEPER: Form Submit hone se rokna ── */
-// Yaad rahe aapke form ki ID 'regForm' honi chahiye
+/* ── Password Strength Logic ── */
+function checkStr(val) {
+    const wrap = document.getElementById('strWrap');
+    if(!wrap) return;
+    if(!val) { wrap.classList.remove('show'); return; }
+    wrap.classList.add('show');
+    let s = 0;
+    if(val.length > 5) s++;
+    if(/[A-Z]/.test(val)) s++;
+    if(/[0-9]/.test(val)) s++;
+    if(/[^A-Za-z0-9]/.test(val)) s++;
+    
+    ['sb1','sb2','sb3','sb4'].forEach(id => document.getElementById(id).className = 'sb');
+    let lbl = document.getElementById('strLbl');
+    if(s <= 1) { 
+        document.getElementById('sb1').classList.add('w');
+        lbl.innerText = 'Weak';
+    } else if (s === 2) {
+        document.getElementById('sb1').classList.add('f'); document.getElementById('sb2').classList.add('f');
+        lbl.innerText = 'Fair';
+    } else if (s === 3) {
+        document.getElementById('sb1').classList.add('g'); document.getElementById('sb2').classList.add('g'); document.getElementById('sb3').classList.add('g');
+        lbl.innerText = 'Good';
+    } else {
+        ['sb1','sb2','sb3','sb4'].forEach(id => document.getElementById(id).classList.add('s'));
+        lbl.innerText = 'Strong';
+    }
+}
+
+/* ── FINAL GATEKEEPER: Run at submit ── */
 const myForm = document.getElementById('regForm');
 if(myForm){
     myForm.onsubmit = function(e) {
-        if (!isNameValid) {
+        const nameVal = document.getElementById('fn').value.trim();
+        const phoneVal = phoneInput.value.trim();
+        const nameRegex = /^[a-zA-Z\s]*$/;
+        const pkPattern = /^03[0-9]{9}$/;
+
+        if (nameVal === "" || nameVal.length < 3 || !nameRegex.test(nameVal)) {
             e.preventDefault();
             alert("Please enter a valid name (letters only, min 3 chars)!");
             return false;
         }
-        if (!isPhoneValid) {
+        if (!pkPattern.test(phoneVal)) {
             e.preventDefault();
-            alert("Please enter a valid phone number!");
+            alert("Please enter a valid phone number (03XXXXXXXXX)!");
             return false;
         }
+        return true;
     };
 }
 </script>
